@@ -73,27 +73,11 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 8px;
         }
         
-        .logo-icon {
-            width: 28px;
+        .logo svg {
             height: 28px;
-            background: linear-gradient(135deg, var(--accent), #a855f7);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-        
-        .logo-icon svg { width: 14px; height: 14px; }
-        
-        .logo-text {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-heading);
-            letter-spacing: -0.3px;
+            width: auto;
         }
         
         .status {
@@ -122,8 +106,10 @@
         /* Main */
         .main {
             display: grid;
-            grid-template-columns: 1fr 340px;
+            grid-template-columns: 1fr 1fr;
             min-height: calc(100vh - 52px);
+            max-width: 1200px;
+            margin: 0 auto;
         }
         
         .panel {
@@ -499,8 +485,28 @@
 <body>
     <header class="header">
         <div class="logo">
-            <div class="logo-icon"><i data-lucide="mic"></i></div>
-            <span class="logo-text">Deep Podcast</span>
+            <svg width="140" height="32" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#A78BFA" />
+                        <stop offset="100%" stop-color="#60A5FA" />
+                    </linearGradient>
+                </defs>
+                <rect x="0" y="12" width="4" height="16" rx="2" fill="url(#logoGradient)" opacity="0.8">
+                    <animate attributeName="height" values="16;24;16" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="y" values="12;8;12" dur="2s" repeatCount="indefinite" />
+                </rect>
+                <rect x="8" y="8" width="4" height="24" rx="2" fill="url(#logoGradient)">
+                    <animate attributeName="height" values="24;32;24" dur="2s" begin="0.3s" repeatCount="indefinite" />
+                    <animate attributeName="y" values="8;4;8" dur="2s" begin="0.3s" repeatCount="indefinite" />
+                </rect>
+                <rect x="16" y="16" width="4" height="8" rx="2" fill="url(#logoGradient)" opacity="0.8">
+                    <animate attributeName="height" values="8;16;8" dur="2s" begin="0.6s" repeatCount="indefinite" />
+                    <animate attributeName="y" values="16;12;16" dur="2s" begin="0.6s" repeatCount="indefinite" />
+                </rect>
+                <text x="32" y="28" font-family="'Inter', sans-serif" font-weight="700" font-size="20" fill="url(#logoGradient)">Deep</text>
+                <text x="84" y="28" font-family="'Inter', sans-serif" font-weight="400" font-size="20" fill="#E5E7EB">Podcast</text>
+            </svg>
         </div>
         <div class="header-actions">
             <div class="status">
