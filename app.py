@@ -254,8 +254,18 @@ def api_generate():
             
             output_path = str(PROJECT_ROOT / "data" / "output" / "podcast.wav")
             
+            # 清空 temp 目录（强制重新生成时）
+            temp_dir = PROJECT_ROOT / "temp"
+            if temp_dir.exists():
+                for f in temp_dir.glob("*.wav"):
+                    try:
+                        f.unlink()
+                    except:
+                        pass
+            
             # 生成音频
             total = APP_STATE.total_segments
+            APP_STATE.current_segment = 0
             
             # 监控进度：10%（模型已加载）-> 95%（生成完成）-> 100%（合并完成）
             def monitor_progress():
