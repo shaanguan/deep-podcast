@@ -994,22 +994,66 @@
             }).join('');
         }
         
+        // 检查 seed 是否被其他角色使用
+        function isSeedUsedByOthers(roleId, seed) {
+            for (const [id, data] of Object.entries(rolesData)) {
+                if (id !== roleId && data.seed === seed) {
+                    return id;
+                }
+            }
+            return null;
+        }
+        
+        // 找到一个未被使用的 seed
+        function findUnusedSeed(baseSeed, excludeRoleId) {
+            let seed = baseSeed;
+            let attempts = 0;
+            while (isSeedUsedByOthers(excludeRoleId, seed) && attempts < 100) {
+                seed = seed + 100;
+                if (seed > 9999) seed = (seed % 9999) + 1;
+                attempts++;
+            }
+            return seed;
+        }
+        
         function selectPreset(roleId, value) {
             if (value === 'custom') {
                 // 保持当前 seed 不变
             } else {
-                const seed = parseInt(value);
+                let seed = parseInt(value);
+                
+                // 检查是否与其他角色冲突
+                const conflictRole = isSeedUsedByOthers(roleId, seed);
+                if (conflictRole) {
+                    seed = findUnusedSeed(seed, roleId);
+                    alert(`该音色已被发言人 ${conflictRole} 使用，已自动调整为 ${seed}`);
+                }
+                
                 rolesData[roleId].seed = seed;
                 // 更新滑块和显示值
                 const slider = document.getElementById(`seed-slider-${roleId}`);
                 const valueDisplay = document.getElementById(`seed-value-${roleId}`);
                 if (slider) slider.value = seed;
                 if (valueDisplay) valueDisplay.textContent = seed;
+                
+                // 更新下拉显示
+                const select = document.getElementById(`preset-${roleId}`);
+                const matchedPreset = voicePresets.find(p => p.value === seed);
+                select.value = matchedPreset ? seed : 'custom';
             }
         }
         
         function updateSeedSlider(roleId, value) {
-            const seed = parseInt(value);
+            let seed = parseInt(value);
+            
+            // 检查是否与其他角色冲突
+            const conflictRole = isSeedUsedByOthers(roleId, seed);
+            if (conflictRole) {
+                seed = findUnusedSeed(seed, roleId);
+                // 更新滑块位置
+                document.getElementById(`seed-slider-${roleId}`).value = seed;
+            }
+            
             rolesData[roleId].seed = seed;
             
             // 更新显示值
