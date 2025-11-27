@@ -39,6 +39,12 @@ try:
 except ImportError:
     HAS_COLORAMA = False
 
+try:
+    import pyloudnorm as pyln
+    HAS_PYLOUDNORM = True
+except ImportError:
+    HAS_PYLOUDNORM = False
+
 
 # ============================================================
 # 终端输出工具
@@ -311,14 +317,19 @@ def crossfade_audio(
 
 def normalize_audio(
     audio: np.ndarray,
-    target_db: float = -3.0
+    sample_rate: int = 24000,
+    target_lufs: float = -16.0
 ) -> np.ndarray:
     """
-    音频响度归一化
+    使用 ITU-R BS.1770-4 标准进行响度归一化 (LUFS)
+    
+    专业播客标准：
+    - Apple Podcasts / Spotify: -16 LUFS (立体声) 或 -19 LUFS (单声道)
     
     Args:
         audio: 音频数据
-        target_db: 目标分贝值
+        sample_rate: 采样率
+        target_lufs: 目标响度 (默认 -16 LUFS，播客行业标准)
         
     Returns:
         归一化后的音频
@@ -326,23 +337,47 @@ def normalize_audio(
     if len(audio) == 0:
         return audio
     
-    # 计算当前 RMS
+    # 优先使用 pyloudnorm（专业 LUFS 标准）
+    if HAS_PYLOUDNORM:
+        try:
+            # 创建响度计量器
+            meter = pyln.Meter(sample_rate)
+            
+            # 测量当前响度
+            loudness = meter.integrated_loudness(audio)
+            
+            # 避免静音片段导致无限大增益
+            if loudness == -float('inf') or np.isnan(loudness):
+                return audio
+            
+            # 归一化到目标响度
+            normalized = pyln.normalize.loudness(audio, loudness, target_lufs)
+            
+            # 防止爆音 (Clipping protection)
+            peak = np.max(np.abs(normalized))
+            if peak > 1.0:
+                normalized = normalized / peak * 0.99
+            
+            return normalized.astype(np.float32)
+            
+        except Exception:
+            pass  # 回退到 RMS 方式
+    
+    # 回退方案：使用 RMS 归一化
     rms = np.sqrt(np.mean(audio ** 2))
     
     if rms < 1e-10:  # 避免除零
         return audio
     
-    # 计算目标 RMS
-    target_rms = 10 ** (target_db / 20)
+    # 将 LUFS 近似转换为 RMS 目标值
+    target_rms = 10 ** ((target_lufs + 10) / 20)  # 粗略近似
     
-    # 计算增益
+    # 计算并应用增益
     gain = target_rms / rms
-    
-    # 应用增益，但限制最大值防止削波
     normalized = audio * gain
     normalized = np.clip(normalized, -1.0, 1.0)
     
-    return normalized
+    return normalized.astype(np.float32)
 
 
 # ============================================================

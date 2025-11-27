@@ -169,12 +169,18 @@ class AudioGenerator:
         
         for attempt in range(max_retries):
             try:
-                # 简化的调用方式
+                # 构建 refine prompt（情感控制）
+                refine_prompt = f"[oral_{role.oral}][laugh_{role.laugh}][break_{role.break_level}]"
+                
+                # 调用 ChatTTS（开启演技功能）
                 wavs = self.chat.infer(
                     [text],
                     use_decoder=True,
                     do_text_normalization=False,
-                    skip_refine_text=True,  # 跳过文本精修以避免问题
+                    skip_refine_text=False,  # 开启文本精修，启用情感控制
+                    params_refine_text=ChatTTS.Chat.RefineTextParams(
+                        prompt=refine_prompt,
+                    ),
                     params_infer_code=ChatTTS.Chat.InferCodeParams(
                         spk_emb=speaker_emb,
                         temperature=self.temperature,
@@ -344,8 +350,8 @@ class AudioGenerator:
         
         # 音频归一化
         if self.do_normalize:
-            print_info("正在归一化音频...")
-            full_audio = normalize_audio(full_audio)
+            print_info("正在归一化音频 (LUFS 标准)...")
+            full_audio = normalize_audio(full_audio, sample_rate=self.sample_rate)
         
         # 保存最终音频
         print_info(f"正在保存到: {output_path}")
