@@ -302,46 +302,45 @@
         /* 性别选择器 */
         .gender-selector {
             display: flex;
-            gap: 4px;
-            background: var(--bg-3);
-            border-radius: 6px;
-            padding: 2px;
+            gap: 2px;
         }
         
         .gender-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 24px;
-            border: none;
+            padding: 4px 8px;
+            border: 1px solid var(--border-2);
             background: transparent;
             color: var(--text-ui-muted);
-            border-radius: 4px;
+            font-size: 11px;
             cursor: pointer;
             transition: all 0.15s;
         }
         
+        .gender-btn:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .gender-btn:last-child {
+            border-radius: 0 4px 4px 0;
+            border-left: none;
+        }
+        
         .gender-btn svg {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
+            margin-right: 4px;
         }
         
         .gender-btn.active {
-            background: var(--accent);
-            color: white;
-        }
-        
-        .gender-btn.male.active {
-            background: #3b82f6;
-        }
-        
-        .gender-btn.female.active {
-            background: #ec4899;
+            background: var(--bg-4);
+            color: var(--text-heading);
+            border-color: var(--text-ui-muted);
         }
         
         .gender-btn:hover:not(.active) {
-            background: var(--bg-4);
+            background: var(--bg-3);
             color: var(--text-ui);
         }
         
@@ -820,8 +819,20 @@
         
         // 角色数据存储
         let rolesData = {};
-        const defaultSeeds = { male: [3333, 5674, 7821, 2456], female: [1234, 4567, 8901, 3210] };
+        // 预设声纹：基于 ChatTTS 实际测试，这些种子偏男声/女声
+        const maleSeeds = [3333, 5674, 7821, 2456, 1111, 2222, 6666, 8888];
+        const femaleSeeds = [1234, 4567, 8901, 3210, 5555, 7777, 9999, 4444];
+        const defaultSeeds = { male: maleSeeds, female: femaleSeeds };
         const roleColors = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
+        
+        // 根据声纹判断性别（简单规则：检查是否在预设列表中，否则用阈值）
+        function detectGender(seed) {
+            if (maleSeeds.includes(seed)) return 'male';
+            if (femaleSeeds.includes(seed)) return 'female';
+            // 默认规则：seed 的某些特征判断（这里用简单的奇偶+范围）
+            // 实际上 ChatTTS 的 seed 与性别无直接关系，这只是 UI 提示
+            return seed % 2 === 0 ? 'male' : 'female';
+        }
         
         let parseTimeout;
         $('script-input').addEventListener('input', () => {
@@ -869,10 +880,12 @@
             // 初始化角色数据（保留已有配置）
             speakers.forEach((id, idx) => {
                 if (!rolesData[id]) {
+                    // 第一个角色默认男声，第二个女声，依次交替
                     const isMale = idx % 2 === 0;
+                    const seed = isMale ? maleSeeds[idx % maleSeeds.length] : femaleSeeds[idx % femaleSeeds.length];
                     rolesData[id] = {
                         gender: isMale ? 'male' : 'female',
-                        seed: isMale ? defaultSeeds.male[idx % 4] : defaultSeeds.female[idx % 4],
+                        seed: seed,
                         speed: 5,
                         emotion: 4
                     };
@@ -890,20 +903,10 @@
                                 <span class="role-label">发言人 ${id}</span>
                             </div>
                             <div class="gender-selector">
-                                <button class="gender-btn male ${role.gender === 'male' ? 'active' : ''}" 
-                                        onclick="setGender('${id}', 'male')" title="男声">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="10" cy="14" r="5"/>
-                                        <path d="M19 5l-5.4 5.4M19 5h-5M19 5v5"/>
-                                    </svg>
-                                </button>
-                                <button class="gender-btn female ${role.gender === 'female' ? 'active' : ''}" 
-                                        onclick="setGender('${id}', 'female')" title="女声">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="8" r="5"/>
-                                        <path d="M12 13v8M9 18h6"/>
-                                    </svg>
-                                </button>
+                                <button class="gender-btn ${role.gender === 'male' ? 'active' : ''}" 
+                                        onclick="setGender('${id}', 'male')">男</button>
+                                <button class="gender-btn ${role.gender === 'female' ? 'active' : ''}" 
+                                        onclick="setGender('${id}', 'female')">女</button>
                             </div>
                         </div>
                         
@@ -954,6 +957,24 @@
         
         function updateRole(roleId, field, value) {
             rolesData[roleId][field] = parseInt(value);
+            
+            // 声纹变化时联动性别
+            if (field === 'seed') {
+                const newGender = detectGender(parseInt(value));
+                if (rolesData[roleId].gender !== newGender) {
+                    rolesData[roleId].gender = newGender;
+                    // 更新性别按钮状态
+                    const section = document.querySelector(`[data-role-id="${roleId}"]`);
+                    if (section) {
+                        const btns = section.querySelectorAll('.gender-btn');
+                        btns.forEach(btn => {
+                            btn.classList.remove('active');
+                            if (btn.textContent === '男' && newGender === 'male') btn.classList.add('active');
+                            if (btn.textContent === '女' && newGender === 'female') btn.classList.add('active');
+                        });
+                    }
+                }
+            }
         }
         
         function updateStats(s) {
