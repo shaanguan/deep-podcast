@@ -161,8 +161,13 @@ class AudioGenerator:
             音频数据，失败返回 None
         """
         # 跳过空文本或过短文本
-        if not text or len(text.strip()) < 2:
+        if not text or len(text.strip()) < 1:
             return None
+        
+        # 【核心修复】每次生成前强制锁定种子，确保音色极致稳定
+        # 只要是这个角色说话，就强制回到初始状态，防止"越说越飘"
+        if HAS_TORCH:
+            torch.manual_seed(role.seed)
         
         # 重试机制
         max_retries = 3
