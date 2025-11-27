@@ -373,6 +373,69 @@
             text-align: right;
         }
         
+        /* 断点续传开关 */
+        .option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: var(--bg-2);
+            border: 1px solid var(--border-1);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .option-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        
+        .option-label input {
+            display: none;
+        }
+        
+        .toggle-switch {
+            width: 36px;
+            height: 20px;
+            background: var(--bg-4);
+            border-radius: 10px;
+            position: relative;
+            transition: background 0.2s;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: var(--text-ui-muted);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.2s;
+        }
+        
+        .option-label input:checked + .toggle-switch {
+            background: var(--accent);
+        }
+        
+        .option-label input:checked + .toggle-switch::after {
+            left: 18px;
+            background: white;
+        }
+        
+        .option-text {
+            font-size: 12px;
+            color: var(--text-heading);
+        }
+        
+        .option-hint {
+            font-size: 10px;
+            color: var(--text-ui-muted);
+        }
+        
         /* 角色颜色 */
         .role-indicator.c1 { background: #ec4899; }
         .role-indicator.c2 { background: #3b82f6; }
@@ -777,6 +840,16 @@
             </div>
             
             <div class="divider"></div>
+            
+            <!-- 断点续传开关 -->
+            <div class="option-row">
+                <label class="option-label">
+                    <input type="checkbox" id="resume-toggle">
+                    <span class="toggle-switch"></span>
+                    <span class="option-text">断点续传</span>
+                </label>
+                <span class="option-hint">保留已生成片段，从中断处继续</span>
+            </div>
             
             <!-- 生成按钮 -->
             <div id="generate-wrapper">
@@ -1183,10 +1256,13 @@
                 };
             });
             
+            // 断点续传选项
+            const resume = $('resume-toggle').checked;
+            
             fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, roles })
+                body: JSON.stringify({ text, roles, resume })
             }).then(res => res.json()).then(data => {
                 if (!data.success) {
                     showError(data.error);

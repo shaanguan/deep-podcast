@@ -188,6 +188,7 @@ def api_generate():
     data = request.json
     text = data.get('text', '')
     roles_config = data.get('roles', {})
+    resume_mode = data.get('resume', False)  # 断点续传模式
     
     # 解析文本
     stats, dialogues = parse_text(text)
@@ -254,9 +255,9 @@ def api_generate():
             
             output_path = str(PROJECT_ROOT / "data" / "output" / "podcast.wav")
             
-            # 清空 temp 目录（强制重新生成时）
+            # 清空 temp 目录（非断点续传模式）
             temp_dir = PROJECT_ROOT / "temp"
-            if temp_dir.exists():
+            if not resume_mode and temp_dir.exists():
                 for f in temp_dir.glob("*.wav"):
                     try:
                         f.unlink()
@@ -283,7 +284,7 @@ def api_generate():
             monitor_thread.start()
             
             success = APP_STATE.generator.generate(
-                dialogues, output_path, resume=False, force=True
+                dialogues, output_path, resume=resume_mode, force=not resume_mode
             )
             
             APP_STATE.is_generating = False
