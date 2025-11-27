@@ -2,20 +2,19 @@
 # Deep Podcast 配置文件 (科技播客优化版)
 # ============================================================
 
-# 全局演技配置 (针对科技播客优化)
+# 全局演技配置
 style:
-  temperature: 0.1        # 极低随机性，追求极致稳定和冷静
-  top_P: 0.6              # 降低采样范围，确保术语发音准确，不胡言乱语
-  top_K: 20               # 保持标准
+  temperature: 0.1        # 极低随机性，追求极致稳定
+  top_P: 0.6              # 降低采样范围，确保术语准确
+  top_K: 20
   
   # 文本精修参数 (ChatTTS RefineText)
   refine:
-    oral: 0               # 口语化归零，去除"呃、那个"，追求干练
-    laugh: 0              # 严肃讨论，不笑场
-    break: 3              # 句子内部流畅，不拖泥带水
+    oral: 0               # 口语化归零，追求干练
+    laugh: 0              # 严肃讨论
+    break: 3              # 句子内部流畅
 
 # 固定角色配置
-# 未在此定义的角色将自动分配声纹
 roles:
   "1":
     seed: 3333            # 固定女声种子
@@ -26,17 +25,16 @@ roles:
       laugh: 0
       break: 3
   
-  # 示例：如需固定其他角色，取消注释并修改
-  # "2":
-  #   seed: 2222
-  #   prompt: "[speed_5]"
-  #   desc: "嘉宾(男声)"
-  #   refine_override:
-  #     oral: 3
-  #     laugh: 1
+  "2":
+    seed: 6666            # 深沉男声
+    prompt: "[speed_6]"   # 语速稍快，体现专业感
+    desc: "嘉宾(技术专家)"
+    refine_override:
+      oral: 1             # 稍微自然一点
+      laugh: 0
+      break: 4            # 思考感停顿
 
 # 自动种子生成策略
-# 新角色的 Seed = base + (ID * step)
 auto_seed:
   base: 5000
   step: 337
@@ -44,14 +42,13 @@ auto_seed:
 # 音频配置
 audio:
   sample_rate: 24000      # 采样率
-  pause_duration: 0.75    # 稍长的停顿，给听众思考技术点的时间
+  pause_duration: 0.75    # 稍长的停顿，留白
   normalize: true         # 是否归一化响度
-  use_room_tone: true     # 必须开启底噪，避免长停顿时的"死寂感"
-  room_tone_volume: 0.01  # 极低音量底噪，维持空气感
-  crossfade_ms: 80        # 更长的交叉淡化，确保顶级顺滑度
+  use_room_tone: true     # 使用底噪代替静音
+  room_tone_volume: 0.01  # 底噪音量
+  crossfade_ms: 80        # 顺滑拼接
 
 # 文本处理配置
 text:
-  max_chunk_length: 100   # 长文本切分阈值(字符)
+  max_chunk_length: 100   # 长文本切分阈值
   convert_numbers: true   # 数字转汉字
-
