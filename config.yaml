@@ -1,18 +1,18 @@
 # ============================================================
-# Deep Podcast 配置文件
+# Deep Podcast 配置文件 (科技播客优化版)
 # ============================================================
 
-# 全局演技配置
+# 全局演技配置 (针对科技播客优化)
 style:
-  temperature: 0.3        # 随机性 (0.1稳定 - 0.9疯狂)
-  top_P: 0.7
-  top_K: 20
+  temperature: 0.1        # 极低随机性，追求极致稳定和冷静
+  top_P: 0.6              # 降低采样范围，确保术语发音准确，不胡言乱语
+  top_K: 20               # 保持标准
   
   # 文本精修参数 (ChatTTS RefineText)
   refine:
-    oral: 2               # 口语化程度 (0-9)
-    laugh: 0              # 笑声概率 (0-9)
-    break: 4              # 停顿概率 (0-9)
+    oral: 0               # 口语化归零，去除"呃、那个"，追求干练
+    laugh: 0              # 严肃讨论，不笑场
+    break: 3              # 句子内部流畅，不拖泥带水
 
 # 固定角色配置
 # 未在此定义的角色将自动分配声纹
@@ -21,7 +21,6 @@ roles:
     seed: 3333            # 固定女声种子
     prompt: "[speed_5]"
     desc: "主持人(知性女声)"
-    # 主持人需要更专业清晰
     refine_override:
       oral: 0
       laugh: 0
@@ -45,11 +44,11 @@ auto_seed:
 # 音频配置
 audio:
   sample_rate: 24000      # 采样率
-  pause_duration: 0.5     # 段落间停顿(秒)
+  pause_duration: 0.75    # 稍长的停顿，给听众思考技术点的时间
   normalize: true         # 是否归一化响度
-  use_room_tone: true     # 使用底噪代替静音
-  room_tone_volume: 0.01  # 底噪音量 (0.0-1.0)
-  crossfade_ms: 50        # 交叉淡入淡出(毫秒)
+  use_room_tone: true     # 必须开启底噪，避免长停顿时的"死寂感"
+  room_tone_volume: 0.01  # 极低音量底噪，维持空气感
+  crossfade_ms: 80        # 更长的交叉淡化，确保顶级顺滑度
 
 # 文本处理配置
 text:
