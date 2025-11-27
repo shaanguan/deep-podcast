@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Deep Podcast - Professional Web UI
-基于 Gradio 的专业级可视化界面
+Deep Podcast - Premium Web UI
+High-fidelity modern interface with glassmorphism design
 """
 
 import os
@@ -52,8 +52,6 @@ class AppState:
     config: dict = None
     model_loaded: bool = False
     is_generating: bool = False
-    current_progress: float = 0.0
-    current_status: str = ""
     
 APP_STATE = AppState()
 
@@ -69,19 +67,12 @@ def load_config() -> dict:
         return yaml.safe_load(f)
 
 
-def save_config(config: dict):
-    """保存配置文件"""
-    config_path = PROJECT_ROOT / "config.yaml"
-    with open(config_path, 'w', encoding='utf-8') as f:
-        yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
-
-
 # ============================================================
 # 模型管理
 # ============================================================
 
 def ensure_model_loaded(progress_callback=None) -> Tuple[bool, str]:
-    """确保模型已加载（智能加载）"""
+    """确保模型已加载"""
     global APP_STATE
     
     if APP_STATE.model_loaded and APP_STATE.generator is not None:
@@ -89,14 +80,14 @@ def ensure_model_loaded(progress_callback=None) -> Tuple[bool, str]:
     
     try:
         if progress_callback:
-            progress_callback(0.1, "正在加载配置...")
+            progress_callback(0.1, "加载配置...")
         
         APP_STATE.config = load_config()
         APP_STATE.role_manager = RoleManager(APP_STATE.config)
         APP_STATE.generator = AudioGenerator(APP_STATE.config, APP_STATE.role_manager)
         
         if progress_callback:
-            progress_callback(0.2, "正在加载 ChatTTS 模型（首次约需 30 秒）...")
+            progress_callback(0.2, "加载 ChatTTS 模型...")
         
         temp_dir = str(PROJECT_ROOT / "temp")
         assets_dir = str(PROJECT_ROOT / "assets")
@@ -105,10 +96,6 @@ def ensure_model_loaded(progress_callback=None) -> Tuple[bool, str]:
             return False, "模型加载失败"
         
         APP_STATE.model_loaded = True
-        
-        if progress_callback:
-            progress_callback(0.3, "模型加载完成！")
-        
         return True, "模型加载成功"
         
     except Exception as e:
@@ -129,7 +116,7 @@ def parse_uploaded_file(file_path: str) -> str:
     try:
         if file_ext == '.docx':
             if not HAS_DOCX:
-                return "❌ 请安装 python-docx: pip install python-docx"
+                return "❌ 请安装 python-docx"
             doc = Document(file_path)
             paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
             return '\n\n'.join(paragraphs)
@@ -137,80 +124,36 @@ def parse_uploaded_file(file_path: str) -> str:
         elif file_ext == '.json':
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            
             lines = []
             if isinstance(data, dict) and 'dialogues' in data:
                 for item in data['dialogues']:
-                    speaker = item.get('speaker', item.get('speaker_id', '1'))
-                    text = item.get('text', item.get('content', ''))
+                    speaker = item.get('speaker', '1')
+                    text = item.get('text', '')
                     lines.append(f"发言人{speaker} {text}")
             elif isinstance(data, list):
                 for item in data:
                     if isinstance(item, dict):
-                        speaker = item.get('speaker', item.get('speaker_id', '1'))
-                        text = item.get('text', item.get('content', ''))
+                        speaker = item.get('speaker', '1')
+                        text = item.get('text', '')
                         lines.append(f"发言人{speaker} {text}")
-            elif isinstance(data, dict):
-                for speaker, texts in data.items():
-                    if isinstance(texts, list):
-                        for text in texts:
-                            lines.append(f"发言人{speaker} {text}")
-                    else:
-                        lines.append(f"发言人{speaker} {texts}")
             return '\n\n'.join(lines)
         
         elif file_ext == '.md':
             with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            lines = []
-            current_speaker = None
-            current_text = []
-            
-            for line in content.split('\n'):
-                line = line.strip()
-                if not line or line.startswith(('---', '***', '===', '```')):
-                    continue
-                
-                # 检测发言人模式
-                speaker_match = re.match(
-                    r'^(?:#{1,6}\s*|\*\*)?(发言人|Speaker|说话人)\s*(\d+)\**\s*[:：]?\s*(.*)$',
-                    line, re.IGNORECASE
-                )
-                if speaker_match:
-                    if current_speaker and current_text:
-                        lines.append(f"发言人{current_speaker} {''.join(current_text)}")
-                    current_speaker = speaker_match.group(2)
-                    current_text = [speaker_match.group(3)] if speaker_match.group(3) else []
-                    continue
-                
-                # 清理 Markdown 格式
-                line = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', line)
-                line = re.sub(r'!\[[^\]]*\]\([^)]+\)', '', line)
-                line = re.sub(r'\*\*([^*]+)\*\*', r'\1', line)
-                line = re.sub(r'\*([^*]+)\*', r'\1', line)
-                line = re.sub(r'`([^`]+)`', r'\1', line)
-                
-                if current_speaker and line:
-                    current_text.append(line)
-            
-            if current_speaker and current_text:
-                lines.append(f"发言人{current_speaker} {''.join(current_text)}")
-            
-            return '\n\n'.join(lines) if lines else content
+                return f.read()
         
         else:
             with open(file_path, 'r', encoding='utf-8') as f:
                 return f.read()
                 
     except Exception as e:
-        return f"❌ 文件解析失败: {str(e)}"
+        return f"❌ 解析失败: {str(e)}"
 
 
 def parse_text_to_dialogues(text: str) -> Tuple[str, list]:
     """解析文本为对话列表"""
     if not text.strip():
-        return "⚠️ 请输入文本内容", []
+        return "请输入脚本内容", []
     
     with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
         f.write(text)
@@ -225,7 +168,7 @@ def parse_text_to_dialogues(text: str) -> Tuple[str, list]:
         )
         
         if not dialogues:
-            return "⚠️ 未解析到有效对话，请检查格式", []
+            return "未解析到有效对话", []
         
         # 统计
         speaker_stats = {}
@@ -243,70 +186,42 @@ def parse_text_to_dialogues(text: str) -> Tuple[str, list]:
         est_minutes = int(estimated_seconds // 60)
         est_seconds = int(estimated_seconds % 60)
         
-        # 格式化输出
-        preview = f"""╔══════════════════════════════════════════════════════════╗
-║                     📊 解析统计                          ║
-╠══════════════════════════════════════════════════════════╣
-║  👥 角色数量    │  {len(speaker_stats):>3} 位                               ║
-║  💬 对话片段    │  {len(dialogues):>3} 段                               ║
-║  📝 总字数      │  {total_chars:>5} 字                             ║
-║  ⏱️  预估时长    │  {est_minutes:>2}分{est_seconds:02d}秒                            ║
-╠══════════════════════════════════════════════════════════╣
-║                     📋 角色明细                          ║
-╠══════════════════════════════════════════════════════════╣"""
+        # 简洁的统计信息
+        stats = f"✓ {len(dialogues)} 段对话 · {len(speaker_stats)} 位角色 · {total_chars} 字 · 约 {est_minutes}:{est_seconds:02d}"
         
-        for spk_id in sorted(speaker_stats.keys(), key=lambda x: int(x) if x.isdigit() else 999):
-            stats = speaker_stats[spk_id]
-            preview += f"\n║  发言人{spk_id:<3}     │  {stats['count']:>3} 段 / {stats['chars']:>5} 字                    ║"
-        
-        preview += f"""
-╠══════════════════════════════════════════════════════════╣
-║                     📜 对话预览                          ║
-╠══════════════════════════════════════════════════════════╣"""
-        
-        for d in dialogues[:8]:
-            text_preview = d.text[:30] + "..." if len(d.text) > 30 else d.text
-            preview += f"\n║  [{d.index + 1:02d}] 发言人{d.speaker_id}: {text_preview:<35}║"
-        
-        if len(dialogues) > 8:
-            preview += f"\n║  ... 还有 {len(dialogues) - 8} 条对话                                    ║"
-        
-        preview += "\n╚══════════════════════════════════════════════════════════╝"
-        
-        return preview, dialogues
+        return stats, dialogues
         
     finally:
         os.unlink(temp_path)
 
 
 # ============================================================
-# 核心生成逻辑（带进度）
+# 核心生成逻辑
 # ============================================================
 
-def generate_with_progress(
+def generate_audio(
     text: str,
     host_seed: int,
     host_speed: int,
+    host_emotion: int,
     guest_seed: int,
     guest_speed: int,
-    auto_seed_base: int,
+    guest_emotion: int,
     pause_duration: float,
-    normalize: bool,
-    temperature: float,
     progress: gr.Progress = gr.Progress()
 ) -> Tuple[Optional[str], str]:
-    """带进度的音频生成"""
+    """生成音频"""
     global APP_STATE
     
     if APP_STATE.is_generating:
-        return None, "⚠️ 已有任务在生成中，请稍候..."
+        return None, "⏳ 生成中，请稍候..."
     
     APP_STATE.is_generating = True
     start_time = time.time()
     
     try:
-        # Step 1: 确保模型加载
-        progress(0.05, desc="🔄 检查模型状态...")
+        # Step 1: 加载模型
+        progress(0.05, desc="Initializing...")
         
         success, msg = ensure_model_loaded(
             lambda p, s: progress(p * 0.25, desc=s)
@@ -315,65 +230,59 @@ def generate_with_progress(
         if not success:
             return None, f"❌ {msg}"
         
-        # Step 2: 更新配置
-        progress(0.25, desc="⚙️ 应用配置参数...")
+        # Step 2: 配置
+        progress(0.25, desc="Configuring voices...")
         
         APP_STATE.config['roles'] = {
             "1": {
                 "seed": host_seed,
                 "prompt": f"[speed_{host_speed}]",
-                "desc": "主持人",
-                "refine_override": {"oral": 0, "laugh": 0, "break": 3}
+                "desc": "Host",
+                "refine_override": {
+                    "oral": min(host_emotion, 5),
+                    "laugh": max(0, host_emotion - 5),
+                    "break": 3
+                }
             },
             "2": {
                 "seed": guest_seed,
                 "prompt": f"[speed_{guest_speed}]",
-                "desc": "嘉宾",
-                "refine_override": {"oral": 2, "laugh": 1, "break": 4}
+                "desc": "Guest",
+                "refine_override": {
+                    "oral": min(guest_emotion, 5),
+                    "laugh": max(0, guest_emotion - 5),
+                    "break": 4
+                }
             }
         }
-        APP_STATE.config['auto_seed']['base'] = auto_seed_base
         APP_STATE.config['audio']['pause_duration'] = pause_duration
-        APP_STATE.config['audio']['normalize'] = normalize
-        APP_STATE.config['style']['temperature'] = temperature
         
         APP_STATE.role_manager = RoleManager(APP_STATE.config)
         APP_STATE.generator.role_manager = APP_STATE.role_manager
         APP_STATE.generator.pause_duration = pause_duration
-        APP_STATE.generator.do_normalize = normalize
-        APP_STATE.generator.temperature = temperature
         
-        # Step 3: 解析文本
-        progress(0.28, desc="📝 解析对话文本...")
+        # Step 3: 解析
+        progress(0.28, desc="Parsing script...")
         _, dialogues = parse_text_to_dialogues(text)
         
         if not dialogues:
-            return None, "❌ 解析失败，请检查文本格式"
+            return None, "❌ 解析失败"
         
         total_dialogues = len(dialogues)
-        total_chars = sum(len(d.text) for d in dialogues)
         
-        # 估算每个片段的时间（基于实际测试约 2-5 秒/片段）
-        estimated_per_segment = 3.0
-        estimated_total = total_dialogues * estimated_per_segment
-        
-        # Step 4: 逐段生成（模拟进度）
-        progress(0.30, desc=f"🎙️ 开始生成 {total_dialogues} 个音频片段...")
+        # Step 4: 生成
+        progress(0.30, desc=f"Generating {total_dialogues} segments...")
         
         output_path = str(PROJECT_ROOT / "data" / "output" / "podcast_ui.wav")
         
-        # 启动生成
-        # 由于 generator.generate 是同步的，我们用线程来更新进度
+        # 后台生成
         generation_complete = threading.Event()
         generation_result = {"success": False, "error": None}
         
         def run_generation():
             try:
                 result = APP_STATE.generator.generate(
-                    dialogues,
-                    output_path,
-                    resume=False,
-                    force=True
+                    dialogues, output_path, resume=False, force=True
                 )
                 generation_result["success"] = result
             except Exception as e:
@@ -381,80 +290,46 @@ def generate_with_progress(
             finally:
                 generation_complete.set()
         
-        # 启动生成线程
         gen_thread = threading.Thread(target=run_generation)
         gen_thread.start()
         
-        # 模拟进度更新
-        progress_start = 0.30
-        progress_end = 0.90
-        progress_range = progress_end - progress_start
-        
-        segment_idx = 0
+        # 进度更新
         while not generation_complete.is_set():
-            # 检查 temp 目录中的文件数量来估算进度
             temp_dir = PROJECT_ROOT / "temp"
             if temp_dir.exists():
-                wav_files = list(temp_dir.glob("*.wav"))
-                segment_idx = len(wav_files)
-            
-            current_progress = progress_start + (segment_idx / max(total_dialogues, 1)) * progress_range
-            current_progress = min(current_progress, progress_end)
-            
-            elapsed = time.time() - start_time
-            if segment_idx > 0:
-                estimated_remaining = (elapsed / segment_idx) * (total_dialogues - segment_idx)
-                remaining_str = f"{int(estimated_remaining)}秒"
-            else:
-                remaining_str = "计算中..."
-            
-            progress(
-                current_progress,
-                desc=f"🎙️ 生成中 [{segment_idx}/{total_dialogues}] - 预计剩余: {remaining_str}"
-            )
-            
+                done = len(list(temp_dir.glob("*.wav")))
+                pct = 0.30 + (done / max(total_dialogues, 1)) * 0.60
+                elapsed = time.time() - start_time
+                if done > 0:
+                    eta = int((elapsed / done) * (total_dialogues - done))
+                    progress(min(pct, 0.90), desc=f"Generating... {done}/{total_dialogues} (ETA: {eta}s)")
+                else:
+                    progress(0.35, desc="Generating...")
             time.sleep(0.5)
         
         gen_thread.join()
         
-        # Step 5: 后处理
         if generation_result["error"]:
-            return None, f"❌ 生成出错: {generation_result['error']}"
+            return None, f"❌ {generation_result['error']}"
         
-        if not generation_result["success"]:
-            return None, "❌ 生成失败，请检查日志"
+        if not generation_result["success"] or not os.path.exists(output_path):
+            return None, "❌ 生成失败"
         
-        progress(0.95, desc="🔊 音频后处理...")
+        progress(0.95, desc="Finalizing...")
         
-        # 检查输出文件
-        if not os.path.exists(output_path):
-            return None, "❌ 输出文件未生成"
-        
-        # 计算时长
+        # 计算结果
         data, sr = sf.read(output_path)
         duration = len(data) / sr
-        minutes = int(duration // 60)
-        seconds = duration % 60
-        
         elapsed_total = time.time() - start_time
-        elapsed_min = int(elapsed_total // 60)
-        elapsed_sec = int(elapsed_total % 60)
         
-        progress(1.0, desc="✅ 生成完成！")
+        progress(1.0, desc="Complete!")
         
-        result_msg = f"""╔══════════════════════════════════════════════════════════╗
-║                     ✅ 生成成功                          ║
-╠══════════════════════════════════════════════════════════╣
-║  🎵 音频时长    │  {minutes:>2}分{seconds:04.1f}秒                          ║
-║  ⏱️  耗时        │  {elapsed_min:>2}分{elapsed_sec:02d}秒                            ║
-║  📊 片段数量    │  {total_dialogues:>3} 段                               ║
-║  📝 总字数      │  {total_chars:>5} 字                             ║
-╚══════════════════════════════════════════════════════════╝"""
+        result_msg = f"✓ {int(duration//60)}:{int(duration%60):02d} 音频 · 耗时 {int(elapsed_total)}s"
         
         return output_path, result_msg
         
     except Exception as e:
-        return None, f"❌ 生成出错: {str(e)}"
+        return None, f"❌ {str(e)}"
     
     finally:
         APP_STATE.is_generating = False
@@ -464,395 +339,556 @@ def generate_with_progress(
 # UI 回调
 # ============================================================
 
-def on_parse_text(text: str):
-    """解析文本"""
-    preview, _ = parse_text_to_dialogues(text)
-    return preview
-
-
 def on_file_upload(file):
-    """文件上传"""
     if file is None:
-        return "", "⚠️ 请选择文件"
-    
+        return "", ""
     file_path = file.name if hasattr(file, 'name') else file
     text = parse_uploaded_file(file_path)
-    
     if text.startswith("❌"):
         return "", text
-    
-    preview, _ = parse_text_to_dialogues(text)
-    return text, preview
+    stats, _ = parse_text_to_dialogues(text)
+    return text, stats
+
+
+def on_text_change(text):
+    if not text.strip():
+        return ""
+    stats, _ = parse_text_to_dialogues(text)
+    return stats
 
 
 def on_load_sample():
-    """加载示例"""
     sample_path = PROJECT_ROOT / "data" / "input" / "transcript.txt"
     if sample_path.exists():
         with open(sample_path, 'r', encoding='utf-8') as f:
             text = f.read()
-        preview, _ = parse_text_to_dialogues(text)
-        return text, preview
-    return "", "⚠️ 示例文件不存在"
-
-
-def get_model_status():
-    """获取模型状态"""
-    if APP_STATE.model_loaded:
-        return "🟢 模型已就绪"
-    return "🟡 模型未加载（首次生成时自动加载）"
+        stats, _ = parse_text_to_dialogues(text)
+        return text, stats
+    return "", ""
 
 
 # ============================================================
-# UI 界面
+# Premium UI
 # ============================================================
 
 def create_ui():
-    """创建专业级 UI"""
+    """创建高保真 UI"""
     
-    # 深色主题 CSS
-    custom_css = """
-    /* 全局样式 */
+    css = """
+    /* ===== 全局样式 ===== */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+    
     .gradio-container {
         max-width: 1400px !important;
-        margin: auto !important;
+        margin: 0 auto !important;
+        background: linear-gradient(180deg, #f8f9fc 0%, #eef1f8 100%) !important;
+        min-height: 100vh;
     }
     
-    /* 标题区 */
-    .title-container {
+    /* ===== 头部 ===== */
+    .header-section {
         text-align: center;
-        padding: 2rem 0;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-        border-radius: 16px;
-        border: 1px solid #333;
+        padding: 40px 20px 30px;
+        margin-bottom: 20px;
     }
     
-    .main-title {
-        font-size: 2.8rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #00d9ff 0%, #00ff88 50%, #ffcc00 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin: 0;
-        padding: 0.5rem;
-        letter-spacing: 2px;
-    }
-    
-    .subtitle {
-        color: #888;
-        font-size: 1.1rem;
-        margin-top: 0.5rem;
-        font-weight: 300;
-    }
-    
-    .version-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        margin-top: 0.75rem;
-        font-weight: 600;
-    }
-    
-    /* 卡片样式 */
-    .card {
-        background: #1e1e2e;
-        border: 1px solid #333;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-    }
-    
-    .card-header {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #00d9ff;
-        margin-bottom: 1rem;
+    .logo-title {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 8px;
     }
     
-    /* 状态指示器 */
-    .status-indicator {
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        font-weight: 500;
+    .logo-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.35);
+    }
+    
+    .app-title {
+        font-size: 32px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+    }
+    
+    .app-subtitle {
+        color: #6b7280;
+        font-size: 15px;
+        font-weight: 400;
+    }
+    
+    /* ===== 玻璃卡片 ===== */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8) !important;
+        border-radius: 20px !important;
+        box-shadow: 
+            0 4px 24px rgba(102, 126, 234, 0.08),
+            0 1px 2px rgba(0, 0, 0, 0.04) !important;
+        padding: 24px !important;
+    }
+    
+    /* ===== 面板标题 ===== */
+    .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .panel-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+    
+    .panel-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    /* ===== 角色卡片 ===== */
+    .character-card {
+        background: linear-gradient(135deg, #fafbff 0%, #f3f4f8 100%);
+        border: 1px solid #e8ebf4;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .character-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+    }
+    
+    .character-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .avatar-host {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .avatar-guest {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .character-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .character-role {
+        font-size: 13px;
+        color: #9ca3af;
+    }
+    
+    /* ===== 滑块美化 ===== */
+    input[type="range"] {
+        -webkit-appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        cursor: pointer;
+    }
+    
+    /* ===== 上传区域 ===== */
+    .upload-zone {
+        border: 2px dashed #d1d5db !important;
+        border-radius: 16px !important;
+        background: linear-gradient(135deg, #fafbff 0%, #f8f9fc 100%) !important;
+        padding: 24px !important;
         text-align: center;
+        transition: all 0.3s ease;
     }
     
-    .status-ready {
-        background: linear-gradient(135deg, #0d4d1c 0%, #1a5928 100%);
-        border: 1px solid #2d7a3e;
-        color: #7dff9e;
+    .upload-zone:hover {
+        border-color: #667eea !important;
+        background: linear-gradient(135deg, #f5f7ff 0%, #f0f3ff 100%) !important;
     }
     
-    .status-pending {
-        background: linear-gradient(135deg, #4d3d0d 0%, #5a4a1a 100%);
-        border: 1px solid #7a6a2d;
-        color: #ffd97d;
-    }
-    
-    /* 按钮样式 */
-    .generate-btn {
-        background: linear-gradient(135deg, #00d9ff 0%, #00ff88 100%) !important;
-        color: #000 !important;
-        font-weight: 700 !important;
-        font-size: 1.1rem !important;
-        padding: 1rem 2rem !important;
+    /* ===== 文本编辑器 ===== */
+    textarea {
+        border: 1px solid #e5e7eb !important;
         border-radius: 12px !important;
+        padding: 16px !important;
+        font-size: 14px !important;
+        line-height: 1.7 !important;
+        background: #fafbfc !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    textarea:focus {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+    }
+    
+    /* ===== 生成按钮 ===== */
+    .generate-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         border: none !important;
+        border-radius: 14px !important;
+        padding: 16px 48px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        box-shadow: 
+            0 8px 32px rgba(102, 126, 234, 0.35),
+            0 0 0 0 rgba(102, 126, 234, 0.5) !important;
         transition: all 0.3s ease !important;
+        cursor: pointer !important;
     }
     
     .generate-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+        transform: translateY(-2px) !important;
+        box-shadow: 
+            0 12px 40px rgba(102, 126, 234, 0.45),
+            0 0 30px rgba(102, 126, 234, 0.3) !important;
     }
     
-    /* 进度条 */
-    .progress-container {
-        background: #1a1a2e;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: 1rem 0;
+    .generate-btn:active {
+        transform: translateY(0) !important;
     }
     
-    /* 音频播放器 */
-    .audio-container {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        border-radius: 12px;
-        padding: 1.5rem;
-        border: 1px solid #333;
+    /* ===== 状态标签 ===== */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
     }
     
-    /* 文本框 */
-    textarea {
-        font-family: 'SF Mono', 'Menlo', monospace !important;
-        font-size: 0.9rem !important;
+    .status-ready {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        color: #065f46;
     }
     
-    /* 统计信息框 */
-    .stats-box {
-        font-family: 'SF Mono', 'Menlo', monospace;
-        font-size: 0.85rem;
-        line-height: 1.6;
-        background: #0d0d14;
-        border: 1px solid #333;
-        border-radius: 8px;
-        padding: 1rem;
+    .status-pending {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        color: #92400e;
+    }
+    
+    /* ===== 音频播放器 ===== */
+    .audio-player {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%) !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        margin-top: 20px;
+    }
+    
+    .audio-player audio {
+        width: 100%;
+    }
+    
+    /* ===== 统计信息 ===== */
+    .stats-display {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-size: 13px;
+        color: #166534;
+        font-weight: 500;
+    }
+    
+    /* ===== 响应式 ===== */
+    @media (max-width: 768px) {
+        .gradio-container {
+            padding: 10px !important;
+        }
+        .app-title {
+            font-size: 24px;
+        }
     }
     """
     
     with gr.Blocks(
-        title="Deep Podcast - AI 配音生成器",
-        css=custom_css,
-        theme=gr.themes.Base(
-            primary_hue=gr.themes.colors.cyan,
-            secondary_hue=gr.themes.colors.emerald,
+        title="Deep Podcast - AI Voice Studio",
+        css=css,
+        theme=gr.themes.Soft(
+            primary_hue=gr.themes.colors.violet,
+            secondary_hue=gr.themes.colors.blue,
             neutral_hue=gr.themes.colors.slate,
             font=gr.themes.GoogleFont("Inter"),
-        ).set(
-            body_background_fill="#0d0d14",
-            body_background_fill_dark="#0d0d14",
-            block_background_fill="#1a1a2e",
-            block_background_fill_dark="#1a1a2e",
-            block_border_color="#333",
-            block_border_color_dark="#333",
-            input_background_fill="#16213e",
-            input_background_fill_dark="#16213e",
-            button_primary_background_fill="linear-gradient(135deg, #00d9ff 0%, #00ff88 100%)",
-            button_primary_text_color="#000",
         )
     ) as app:
         
-        # 标题区
+        # ===== 头部 =====
         gr.HTML("""
-        <div class="title-container">
-            <h1 class="main-title">🎙️ DEEP PODCAST</h1>
-            <p class="subtitle">AI-Powered Multi-Voice Podcast Generator</p>
-            <span class="version-badge">v2.0 PRO</span>
+        <div class="header-section">
+            <div class="logo-title">
+                <div class="logo-icon">🎙️</div>
+                <span class="app-title">Deep Podcast</span>
+            </div>
+            <p class="app-subtitle">AI-Powered Multi-Voice Podcast Generator</p>
         </div>
         """)
         
-        # 主内容区
-        with gr.Row(equal_height=False):
+        # ===== 主内容 =====
+        with gr.Row(equal_height=True):
             
-            # 左栏：输入
-            with gr.Column(scale=5):
-                
-                gr.Markdown("### 📝 对话脚本")
+            # ===== 左栏: 脚本编辑器 =====
+            with gr.Column(scale=6):
+                gr.HTML("""
+                <div class="panel-header">
+                    <div class="panel-icon">📝</div>
+                    <span class="panel-title">Script Editor</span>
+                </div>
+                """)
                 
                 # 文件上传
-                with gr.Accordion("📁 导入文件 (支持 Word/JSON/Markdown/TXT)", open=False):
-                    file_upload = gr.File(
-                        label="拖拽或点击上传",
-                        file_types=[".docx", ".json", ".md", ".txt"],
-                        file_count="single"
-                    )
+                file_upload = gr.File(
+                    label="",
+                    file_types=[".docx", ".json", ".md", ".txt"],
+                    file_count="single",
+                    elem_classes=["upload-zone"]
+                )
+                gr.HTML("""
+                <div style="text-align: center; margin: -10px 0 16px; color: #9ca3af; font-size: 13px;">
+                    📄 Drop Word, JSON, Markdown or Text files here
+                </div>
+                """)
                 
+                # 文本编辑器
                 text_input = gr.Textbox(
                     label="",
-                    placeholder="""在此输入对话脚本，格式示例：
-
-发言人1 大家好，欢迎收听本期播客！今天我们来聊聊人工智能。
-
-发言人2 没错，AI 技术发展得太快了，你觉得未来会怎样？
-
-发言人1 我认为 AI 会成为我们生活中不可或缺的一部分...""",
-                    lines=12,
-                    max_lines=20
+                    placeholder="发言人1 大家好，欢迎收听本期播客！\n\n发言人2 今天我们来聊聊人工智能...",
+                    lines=14,
+                    max_lines=20,
+                    show_label=False
+                )
+                
+                # 统计信息
+                stats_display = gr.HTML(
+                    value='<div class="stats-display">📊 等待输入脚本...</div>'
                 )
                 
                 with gr.Row():
-                    load_sample_btn = gr.Button("📄 加载示例", size="sm", variant="secondary")
-                    parse_btn = gr.Button("🔍 解析预览", size="sm", variant="secondary")
-                
-                parse_output = gr.Textbox(
-                    label="解析结果",
-                    lines=12,
-                    interactive=False,
-                    elem_classes=["stats-box"]
-                )
+                    load_sample_btn = gr.Button("📄 Load Sample", size="sm", variant="secondary")
             
-            # 右栏：配置
-            with gr.Column(scale=4):
+            # ===== 右栏: 角色设置 =====
+            with gr.Column(scale=5):
+                gr.HTML("""
+                <div class="panel-header">
+                    <div class="panel-icon">🎭</div>
+                    <span class="panel-title">Cast Studio</span>
+                </div>
+                """)
                 
-                gr.Markdown("### ⚙️ 生成配置")
+                # 主持人卡片
+                gr.HTML("""
+                <div class="character-card">
+                    <div class="character-header">
+                        <div class="avatar avatar-host">👩</div>
+                        <div>
+                            <div class="character-name">Host</div>
+                            <div class="character-role">发言人 1 · 主持人</div>
+                        </div>
+                    </div>
+                </div>
+                """)
                 
-                # 角色配置
                 with gr.Group():
-                    gr.Markdown("**🎭 角色声音**")
-                    
-                    with gr.Row():
-                        with gr.Column():
-                            gr.Markdown("<small>**主持人 (发言人1)**</small>")
-                            host_seed = gr.Slider(
-                                minimum=1, maximum=10000, value=3333, step=1,
-                                label="声纹种子"
-                            )
-                            host_speed = gr.Slider(
-                                minimum=1, maximum=9, value=5, step=1,
-                                label="语速 (1慢-9快)"
-                            )
-                        
-                        with gr.Column():
-                            gr.Markdown("<small>**嘉宾 (发言人2)**</small>")
-                            guest_seed = gr.Slider(
-                                minimum=1, maximum=10000, value=5674, step=1,
-                                label="声纹种子"
-                            )
-                            guest_speed = gr.Slider(
-                                minimum=1, maximum=9, value=5, step=1,
-                                label="语速 (1慢-9快)"
-                            )
-                    
-                    auto_seed_base = gr.Slider(
-                        minimum=1000, maximum=9000, value=5000, step=100,
-                        label="其他角色种子基数",
-                        info="发言人N的种子 = 基数 + N×337"
+                    host_seed = gr.Slider(
+                        minimum=1, maximum=10000, value=3333, step=1,
+                        label="🎤 Voice Seed",
+                        info="控制音色特征"
                     )
+                    with gr.Row():
+                        host_speed = gr.Slider(
+                            minimum=1, maximum=9, value=5, step=1,
+                            label="⚡ Speed"
+                        )
+                        host_emotion = gr.Slider(
+                            minimum=0, maximum=9, value=3, step=1,
+                            label="💫 Emotion"
+                        )
                 
-                # 音频配置
+                gr.HTML("<div style='height: 16px'></div>")
+                
+                # 嘉宾卡片
+                gr.HTML("""
+                <div class="character-card">
+                    <div class="character-header">
+                        <div class="avatar avatar-guest">👨</div>
+                        <div>
+                            <div class="character-name">Guest</div>
+                            <div class="character-role">发言人 2 · 嘉宾</div>
+                        </div>
+                    </div>
+                </div>
+                """)
+                
                 with gr.Group():
-                    gr.Markdown("**🔊 音频参数**")
-                    
-                    with gr.Row():
-                        pause_duration = gr.Slider(
-                            minimum=0.1, maximum=2.0, value=0.5, step=0.1,
-                            label="段落停顿 (秒)"
-                        )
-                        temperature = gr.Slider(
-                            minimum=0.1, maximum=1.0, value=0.3, step=0.1,
-                            label="语调变化度"
-                        )
-                    
-                    normalize = gr.Checkbox(
-                        value=True,
-                        label="🔈 启用音频响度归一化 (LUFS 广播标准)"
+                    guest_seed = gr.Slider(
+                        minimum=1, maximum=10000, value=5674, step=1,
+                        label="🎤 Voice Seed",
+                        info="控制音色特征"
                     )
+                    with gr.Row():
+                        guest_speed = gr.Slider(
+                            minimum=1, maximum=9, value=5, step=1,
+                            label="⚡ Speed"
+                        )
+                        guest_emotion = gr.Slider(
+                            minimum=0, maximum=9, value=5, step=1,
+                            label="💫 Emotion"
+                        )
                 
-                # 模型状态
-                model_status = gr.Textbox(
-                    label="模型状态",
-                    value=get_model_status(),
-                    interactive=False,
-                    lines=1
-                )
+                gr.HTML("<div style='height: 16px'></div>")
+                
+                # 全局设置
+                with gr.Accordion("⚙️ Advanced Settings", open=False):
+                    pause_duration = gr.Slider(
+                        minimum=0.1, maximum=2.0, value=0.5, step=0.1,
+                        label="Pause Duration (seconds)"
+                    )
         
-        # 生成按钮（居中大按钮）
-        gr.Markdown("---")
+        # ===== 生成按钮 =====
+        gr.HTML("<div style='height: 24px'></div>")
         
         with gr.Row():
-            gr.Column(scale=1)
-            generate_btn = gr.Button(
-                "🚀 一键生成播客",
-                variant="primary",
-                size="lg",
-                scale=2,
-                elem_classes=["generate-btn"]
-            )
-            gr.Column(scale=1)
+            with gr.Column(scale=1):
+                pass
+            with gr.Column(scale=2):
+                generate_btn = gr.Button(
+                    "✨ Generate Podcast",
+                    variant="primary",
+                    size="lg",
+                    elem_classes=["generate-btn"]
+                )
+            with gr.Column(scale=1):
+                pass
         
         # 生成状态
-        generation_status = gr.Textbox(
-            label="生成状态",
-            value="等待开始...",
-            interactive=False,
-            lines=8,
-            elem_classes=["stats-box"]
+        generation_status = gr.HTML(
+            value='<div style="text-align: center; color: #9ca3af; padding: 12px;">Ready to generate...</div>'
         )
         
-        # 音频输出
-        gr.Markdown("### 🎧 生成结果")
+        # ===== 音频播放器 =====
+        gr.HTML("""
+        <div class="panel-header" style="margin-top: 24px;">
+            <div class="panel-icon">🎧</div>
+            <span class="panel-title">Audio Output</span>
+        </div>
+        """)
         
         audio_output = gr.Audio(
-            label="播放生成的播客",
+            label="",
             type="filepath",
             interactive=False,
-            elem_classes=["audio-container"]
+            show_label=False,
+            elem_classes=["audio-player"]
         )
         
-        # 绑定事件
+        # ===== 页脚 =====
+        gr.HTML("""
+        <div style="text-align: center; padding: 32px 0 16px; color: #9ca3af; font-size: 13px; border-top: 1px solid #e5e7eb; margin-top: 32px;">
+            <strong>Deep Podcast</strong> · Powered by ChatTTS · 
+            <a href="https://github.com/shaanguan/deep-podcast" style="color: #667eea; text-decoration: none;">GitHub</a>
+        </div>
+        """)
+        
+        # ===== 事件绑定 =====
+        
+        # 文件上传
         file_upload.change(
             fn=on_file_upload,
             inputs=file_upload,
-            outputs=[text_input, parse_output]
+            outputs=[text_input, stats_display]
+        ).then(
+            fn=lambda s: f'<div class="stats-display">{s}</div>' if s else '<div class="stats-display">📊 等待输入脚本...</div>',
+            inputs=stats_display,
+            outputs=stats_display
         )
         
+        # 文本变化
+        text_input.change(
+            fn=on_text_change,
+            inputs=text_input,
+            outputs=stats_display
+        ).then(
+            fn=lambda s: f'<div class="stats-display">{s}</div>' if s else '<div class="stats-display">📊 等待输入脚本...</div>',
+            inputs=stats_display,
+            outputs=stats_display
+        )
+        
+        # 加载示例
         load_sample_btn.click(
             fn=on_load_sample,
-            outputs=[text_input, parse_output]
+            outputs=[text_input, stats_display]
+        ).then(
+            fn=lambda s: f'<div class="stats-display">{s}</div>' if s else '<div class="stats-display">📊 等待输入脚本...</div>',
+            inputs=stats_display,
+            outputs=stats_display
         )
         
-        parse_btn.click(
-            fn=on_parse_text,
-            inputs=text_input,
-            outputs=parse_output
-        )
+        # 生成
+        def on_generate_wrapper(*args):
+            audio_path, status = generate_audio(*args)
+            status_html = f'<div style="text-align: center; padding: 12px; color: {"#166534" if "✓" in status else "#dc2626"}; font-weight: 500;">{status}</div>'
+            return audio_path, status_html
         
         generate_btn.click(
-            fn=generate_with_progress,
+            fn=on_generate_wrapper,
             inputs=[
                 text_input,
-                host_seed, host_speed,
-                guest_seed, guest_speed,
-                auto_seed_base,
-                pause_duration, normalize, temperature
+                host_seed, host_speed, host_emotion,
+                guest_seed, guest_speed, guest_emotion,
+                pause_duration
             ],
             outputs=[audio_output, generation_status]
         )
-        
-        # 页脚
-        gr.HTML("""
-        <div style="text-align: center; color: #555; font-size: 0.85rem; padding: 2rem 0; border-top: 1px solid #333; margin-top: 2rem;">
-            <strong>Deep Podcast v2.0</strong> | Powered by ChatTTS | 
-            <a href="https://github.com/shaanguan/deep-podcast" target="_blank" style="color: #00d9ff;">GitHub</a>
-        </div>
-        """)
     
     return app
 
@@ -863,16 +899,15 @@ def create_ui():
 
 if __name__ == "__main__":
     print()
-    print("╔══════════════════════════════════════════════════════════╗")
-    print("║           🎙️  Deep Podcast - Professional UI             ║")
-    print("╚══════════════════════════════════════════════════════════╝")
+    print("┌─────────────────────────────────────────┐")
+    print("│     🎙️  Deep Podcast - Premium UI       │")
+    print("│         AI Voice Studio v2.0            │")
+    print("└─────────────────────────────────────────┘")
     print()
     
-    # 检测硬件
-    hw_info = check_hardware()
+    check_hardware()
     print()
     
-    # 创建并启动 UI
     app = create_ui()
     app.launch(
         server_name="127.0.0.1",
