@@ -335,7 +335,7 @@ if __name__ == '__main__':
     
     check_hardware()
     print()
-    print("启动服务器: http://localhost:5000")
+    print("启动服务器: http://localhost:5001")
     print()
     
-    app.run(host='127.0.0.1', port=5000, debug=False, threaded=True)
+    app.run(host='127.0.0.1', port=5001, debug=False, threaded=True)

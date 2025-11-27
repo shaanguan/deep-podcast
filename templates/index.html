@@ -4,113 +4,173 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deep Podcast - AI 播客生成器</title>
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
-        * {
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-secondary: #111111;
-            --bg-tertiary: #1a1a1a;
-            --bg-hover: #222222;
-            --border: #2a2a2a;
-            --border-light: #333333;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #666666;
-            --accent: #6366f1;
-            --accent-hover: #818cf8;
+            /* Colors */
+            --bg-0: #09090b;
+            --bg-1: #0c0c0f;
+            --bg-2: #131316;
+            --bg-3: #1a1a1f;
+            --bg-4: #222228;
+            --bg-hover: #2a2a32;
+            
+            --border-1: #1f1f24;
+            --border-2: #2a2a32;
+            --border-3: #3a3a44;
+            
+            --text-1: #fafafa;
+            --text-2: #a1a1aa;
+            --text-3: #71717a;
+            --text-4: #52525b;
+            
+            --accent: #8b5cf6;
+            --accent-hover: #a78bfa;
+            --accent-muted: rgba(139, 92, 246, 0.15);
+            
             --success: #22c55e;
+            --warning: #f59e0b;
             --error: #ef4444;
+            
+            /* Typography */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+            
+            /* Spacing */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+        }
+        
+        html {
+            font-size: 14px;
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
+            font-family: var(--font-sans);
+            background: var(--bg-0);
+            color: var(--text-1);
             line-height: 1.5;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         
-        /* Header */
+        /* ===== Layout ===== */
+        .app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* ===== Header ===== */
         .header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            padding: 16px 32px;
+            height: 56px;
+            background: var(--bg-1);
+            border-bottom: 1px solid var(--border-1);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
         
         .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, var(--accent), #a855f7);
-            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent), #c084fc);
+            border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            color: white;
+        }
+        
+        .logo-icon svg {
+            width: 18px;
+            height: 18px;
         }
         
         .logo-text {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 600;
             letter-spacing: -0.3px;
+            color: var(--text-1);
         }
         
-        .status-badge {
+        .header-status {
             display: flex;
             align-items: center;
             gap: 8px;
             padding: 6px 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 13px;
-            color: var(--text-secondary);
+            background: var(--bg-2);
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            color: var(--text-2);
         }
         
-        .status-dot {
-            width: 8px;
-            height: 8px;
+        .status-indicator {
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            background: var(--text-muted);
+            background: var(--text-4);
         }
         
-        .status-dot.ready { background: var(--success); }
-        .status-dot.loading { background: #f59e0b; animation: pulse 1s infinite; }
-        .status-dot.error { background: var(--error); }
+        .status-indicator.ready { background: var(--success); }
+        .status-indicator.loading { background: var(--warning); animation: pulse 1.5s ease-in-out infinite; }
+        .status-indicator.error { background: var(--error); }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.4; }
         }
         
-        /* Main Layout */
+        /* ===== Main Content ===== */
         .main {
+            flex: 1;
             display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 1px;
-            background: var(--border);
-            min-height: calc(100vh - 69px);
+            grid-template-columns: 1fr 360px;
+            background: var(--bg-0);
         }
         
+        /* ===== Panel ===== */
         .panel {
-            background: var(--bg-primary);
             padding: 24px;
+            overflow-y: auto;
+        }
+        
+        .panel-left {
+            background: var(--bg-0);
+            border-right: 1px solid var(--border-1);
+        }
+        
+        .panel-right {
+            background: var(--bg-1);
         }
         
         .panel-header {
@@ -121,116 +181,138 @@
         }
         
         .panel-title {
-            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
             font-weight: 600;
-            color: var(--text-secondary);
+            color: var(--text-3);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         
-        /* Editor */
-        .editor-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+        .panel-title svg {
+            width: 14px;
+            height: 14px;
+            color: var(--text-4);
         }
         
+        /* ===== Upload Zone ===== */
         .upload-zone {
-            border: 1px dashed var(--border-light);
-            border-radius: 8px;
-            padding: 20px;
+            border: 1px dashed var(--border-2);
+            border-radius: var(--radius-lg);
+            padding: 24px;
             text-align: center;
-            margin-bottom: 16px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+            background: var(--bg-1);
         }
         
         .upload-zone:hover {
             border-color: var(--accent);
-            background: rgba(99, 102, 241, 0.05);
+            background: var(--accent-muted);
         }
         
         .upload-zone.dragover {
             border-color: var(--accent);
-            background: rgba(99, 102, 241, 0.1);
+            background: var(--accent-muted);
         }
         
         .upload-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 12px;
+            color: var(--text-4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .upload-icon svg {
+            width: 24px;
+            height: 24px;
         }
         
         .upload-text {
             font-size: 13px;
-            color: var(--text-secondary);
+            color: var(--text-2);
+            margin-bottom: 4px;
         }
         
         .upload-hint {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 4px;
+            font-size: 11px;
+            color: var(--text-4);
+        }
+        
+        /* ===== Editor ===== */
+        .editor-wrapper {
+            position: relative;
         }
         
         .editor {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .editor textarea {
-            flex: 1;
             width: 100%;
-            min-height: 400px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            min-height: 380px;
+            background: var(--bg-2);
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius-lg);
             padding: 16px;
-            color: var(--text-primary);
-            font-family: 'SF Mono', 'Menlo', monospace;
+            color: var(--text-1);
+            font-family: var(--font-mono);
             font-size: 13px;
             line-height: 1.7;
             resize: none;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s ease;
         }
         
-        .editor textarea:focus {
+        .editor:focus {
             border-color: var(--accent);
         }
         
-        .editor textarea::placeholder {
-            color: var(--text-muted);
+        .editor::placeholder {
+            color: var(--text-4);
         }
         
+        /* ===== Stats Bar ===== */
         .stats-bar {
             display: flex;
-            gap: 24px;
-            padding: 12px 0;
-            margin-top: 12px;
-            border-top: 1px solid var(--border);
+            gap: 20px;
+            padding: 14px 0;
+            margin-top: 16px;
+            border-top: 1px solid var(--border-1);
         }
         
-        .stat-item {
+        .stat {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 13px;
-            color: var(--text-secondary);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-4);
         }
         
         .stat-value {
-            color: var(--text-primary);
-            font-weight: 500;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-2);
+            font-family: var(--font-mono);
         }
         
-        /* Settings Panel */
-        .settings-panel {
-            background: var(--bg-secondary);
-            border-left: 1px solid var(--border);
+        /* ===== Role Card ===== */
+        .role-card {
+            background: var(--bg-2);
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: border-color 0.2s ease;
         }
         
-        .role-section {
-            margin-bottom: 28px;
+        .role-card:hover {
+            border-color: var(--border-2);
         }
         
         .role-header {
@@ -241,13 +323,18 @@
         }
         
         .role-avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            color: white;
+        }
+        
+        .role-avatar svg {
+            width: 20px;
+            height: 20px;
         }
         
         .role-avatar.host {
@@ -259,62 +346,49 @@
         }
         
         .role-info h3 {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
+            color: var(--text-1);
             margin-bottom: 2px;
         }
         
         .role-info p {
-            font-size: 12px;
-            color: var(--text-muted);
+            font-size: 11px;
+            color: var(--text-4);
         }
         
-        .control-group {
-            margin-bottom: 16px;
+        /* ===== Controls ===== */
+        .control {
+            margin-bottom: 14px;
         }
         
-        .control-label {
+        .control:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
         }
         
-        .control-label span {
-            font-size: 12px;
-            color: var(--text-secondary);
+        .control-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
         
         .control-value {
-            font-size: 12px;
-            color: var(--text-primary);
-            font-weight: 500;
-            background: var(--bg-tertiary);
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-        
-        input[type="range"] {
-            width: 100%;
-            height: 4px;
-            -webkit-appearance: none;
-            background: var(--bg-tertiary);
-            border-radius: 2px;
-            outline: none;
-        }
-        
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: var(--accent);
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
+            font-size: 11px;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            color: var(--text-2);
+            background: var(--bg-3);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
         }
         
         .control-row {
@@ -323,58 +397,117 @@
             gap: 12px;
         }
         
+        /* ===== Slider ===== */
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg-4);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 0 4px var(--accent-muted);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border: none;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+        
+        /* ===== Divider ===== */
         .divider {
             height: 1px;
-            background: var(--border);
-            margin: 24px 0;
+            background: var(--border-1);
+            margin: 20px 0;
         }
         
-        /* Generate Button */
-        .generate-section {
-            margin-top: auto;
-            padding-top: 24px;
-        }
-        
-        .generate-btn {
-            width: 100%;
-            padding: 14px 24px;
-            background: linear-gradient(135deg, var(--accent), #a855f7);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
+        /* ===== Buttons ===== */
+        .btn {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: none;
+            outline: none;
         }
         
-        .generate-btn:hover:not(:disabled) {
+        .btn svg {
+            width: 14px;
+            height: 14px;
+        }
+        
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-2);
+            border: 1px solid var(--border-2);
+        }
+        
+        .btn-ghost:hover {
+            background: var(--bg-3);
+            color: var(--text-1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            color: white;
+            font-weight: 600;
+            padding: 14px 24px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            font-size: 14px;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.35);
         }
         
-        .generate-btn:disabled {
-            opacity: 0.6;
+        .btn-primary:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
         
-        /* Progress */
-        .progress-container {
+        /* ===== Progress ===== */
+        .progress-section {
             margin-top: 16px;
             display: none;
         }
         
-        .progress-container.active {
+        .progress-section.active {
             display: block;
         }
         
         .progress-bar {
-            height: 4px;
-            background: var(--bg-tertiary);
+            height: 3px;
+            background: var(--bg-4);
             border-radius: 2px;
             overflow: hidden;
         }
@@ -387,15 +520,15 @@
         }
         
         .progress-text {
-            font-size: 12px;
-            color: var(--text-secondary);
+            font-size: 11px;
+            color: var(--text-3);
             text-align: center;
             margin-top: 8px;
         }
         
-        /* Audio Player */
+        /* ===== Audio Player ===== */
         .audio-section {
-            margin-top: 20px;
+            margin-top: 16px;
             display: none;
         }
         
@@ -403,208 +536,237 @@
             display: block;
         }
         
-        .audio-player {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+        .audio-card {
+            background: var(--bg-2);
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius-lg);
             padding: 16px;
         }
         
-        .audio-player audio {
+        .audio-card audio {
             width: 100%;
-            height: 40px;
+            height: 36px;
+            border-radius: var(--radius-md);
         }
         
-        .audio-info {
+        .audio-actions {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             margin-top: 12px;
+        }
+        
+        .audio-duration {
             font-size: 12px;
-            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            color: var(--text-3);
         }
         
-        /* Buttons */
-        .btn-secondary {
-            padding: 8px 16px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-secondary);
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-2);
+            background: var(--bg-3);
+            border: 1px solid var(--border-2);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            transition: all 0.15s ease;
         }
         
-        .btn-secondary:hover {
-            background: var(--bg-hover);
-            color: var(--text-primary);
+        .btn-download:hover {
+            background: var(--bg-4);
+            color: var(--text-1);
         }
         
-        /* Hidden file input */
+        .btn-download svg {
+            width: 12px;
+            height: 12px;
+        }
+        
+        /* ===== Hidden ===== */
         #file-input {
             display: none;
         }
         
-        /* Responsive */
+        /* ===== Responsive ===== */
         @media (max-width: 900px) {
             .main {
                 grid-template-columns: 1fr;
             }
             
-            .settings-panel {
-                border-left: none;
-                border-top: 1px solid var(--border);
+            .panel-left {
+                border-right: none;
+                border-bottom: 1px solid var(--border-1);
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="logo">
-            <div class="logo-icon">🎙️</div>
-            <span class="logo-text">Deep Podcast</span>
-        </div>
-        <div class="status-badge">
-            <span class="status-dot" id="status-dot"></span>
-            <span id="status-text">未加载</span>
-        </div>
-    </header>
-    
-    <!-- Main Content -->
-    <main class="main">
-        <!-- Left: Editor -->
-        <div class="panel editor-container">
-            <div class="panel-header">
-                <span class="panel-title">脚本编辑器</span>
-                <button class="btn-secondary" id="load-sample">加载示例</button>
-            </div>
-            
-            <div class="upload-zone" id="upload-zone">
-                <div class="upload-icon">📄</div>
-                <div class="upload-text">拖放文件到此处，或点击上传</div>
-                <div class="upload-hint">支持 .txt .docx .json .md</div>
-            </div>
-            <input type="file" id="file-input" accept=".txt,.docx,.json,.md">
-            
-            <div class="editor">
-                <textarea id="script-input" placeholder="发言人1 大家好，欢迎收听本期节目！今天我们来聊一个很有意思的话题。
-
-发言人2 没错，这个话题最近确实很火，我也一直想和大家分享一下我的看法。
-
-发言人1 那我们开始吧..."></textarea>
-            </div>
-            
-            <div class="stats-bar">
-                <div class="stat-item">
-                    <span>对话</span>
-                    <span class="stat-value" id="stat-dialogues">0</span>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i data-lucide="mic"></i>
                 </div>
-                <div class="stat-item">
-                    <span>角色</span>
-                    <span class="stat-value" id="stat-speakers">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>字数</span>
-                    <span class="stat-value" id="stat-chars">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>预估</span>
-                    <span class="stat-value" id="stat-duration">0:00</span>
-                </div>
+                <span class="logo-text">Deep Podcast</span>
             </div>
-        </div>
+            <div class="header-status">
+                <span class="status-indicator" id="status-dot"></span>
+                <span id="status-text">未加载</span>
+            </div>
+        </header>
         
-        <!-- Right: Settings -->
-        <div class="panel settings-panel">
-            <div class="panel-header">
-                <span class="panel-title">角色配置</span>
-            </div>
-            
-            <!-- Host -->
-            <div class="role-section">
-                <div class="role-header">
-                    <div class="role-avatar host">👩</div>
-                    <div class="role-info">
-                        <h3>主持人</h3>
-                        <p>发言人 1</p>
-                    </div>
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Left Panel: Editor -->
+            <div class="panel panel-left">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <i data-lucide="file-text"></i>
+                        脚本编辑器
+                    </span>
+                    <button class="btn btn-ghost" id="load-sample">
+                        <i data-lucide="file-plus"></i>
+                        加载示例
+                    </button>
                 </div>
                 
-                <div class="control-group">
-                    <div class="control-label">
-                        <span>声纹种子</span>
-                        <span class="control-value" id="host-seed-value">3333</span>
+                <div class="upload-zone" id="upload-zone">
+                    <div class="upload-icon">
+                        <i data-lucide="upload-cloud"></i>
                     </div>
-                    <input type="range" id="host-seed" min="1" max="9999" value="3333">
+                    <div class="upload-text">拖放文件到此处，或点击上传</div>
+                    <div class="upload-hint">支持 TXT、DOCX、JSON、MD 格式</div>
+                </div>
+                <input type="file" id="file-input" accept=".txt,.docx,.json,.md">
+                
+                <div class="editor-wrapper">
+                    <textarea class="editor" id="script-input" placeholder="发言人1 大家好，欢迎收听本期节目！
+
+发言人2 今天我们来聊一个很有意思的话题...
+
+发言人1 那我们开始吧"></textarea>
                 </div>
                 
-                <div class="control-row">
-                    <div class="control-group">
-                        <div class="control-label">
-                            <span>语速</span>
-                            <span class="control-value" id="host-speed-value">5</span>
-                        </div>
-                        <input type="range" id="host-speed" min="1" max="9" value="5">
+                <div class="stats-bar">
+                    <div class="stat">
+                        <span class="stat-label">对话</span>
+                        <span class="stat-value" id="stat-dialogues">0</span>
                     </div>
-                    <div class="control-group">
-                        <div class="control-label">
-                            <span>情感</span>
-                            <span class="control-value" id="host-emotion-value">3</span>
-                        </div>
-                        <input type="range" id="host-emotion" min="0" max="9" value="3">
+                    <div class="stat">
+                        <span class="stat-label">角色</span>
+                        <span class="stat-value" id="stat-speakers">0</span>
                     </div>
-                </div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <!-- Guest -->
-            <div class="role-section">
-                <div class="role-header">
-                    <div class="role-avatar guest">👨</div>
-                    <div class="role-info">
-                        <h3>嘉宾</h3>
-                        <p>发言人 2</p>
+                    <div class="stat">
+                        <span class="stat-label">字数</span>
+                        <span class="stat-value" id="stat-chars">0</span>
                     </div>
-                </div>
-                
-                <div class="control-group">
-                    <div class="control-label">
-                        <span>声纹种子</span>
-                        <span class="control-value" id="guest-seed-value">5674</span>
-                    </div>
-                    <input type="range" id="guest-seed" min="1" max="9999" value="5674">
-                </div>
-                
-                <div class="control-row">
-                    <div class="control-group">
-                        <div class="control-label">
-                            <span>语速</span>
-                            <span class="control-value" id="guest-speed-value">5</span>
-                        </div>
-                        <input type="range" id="guest-speed" min="1" max="9" value="5">
-                    </div>
-                    <div class="control-group">
-                        <div class="control-label">
-                            <span>情感</span>
-                            <span class="control-value" id="guest-emotion-value">5</span>
-                        </div>
-                        <input type="range" id="guest-emotion" min="0" max="9" value="5">
+                    <div class="stat">
+                        <span class="stat-label">预估</span>
+                        <span class="stat-value" id="stat-duration">0:00</span>
                     </div>
                 </div>
             </div>
             
-            <div class="divider"></div>
-            
-            <!-- Generate -->
-            <div class="generate-section">
-                <button class="generate-btn" id="generate-btn">
-                    <span>✨</span>
-                    <span>开始生成</span>
+            <!-- Right Panel: Settings -->
+            <div class="panel panel-right">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <i data-lucide="settings-2"></i>
+                        角色配置
+                    </span>
+                </div>
+                
+                <!-- Host -->
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-avatar host">
+                            <i data-lucide="user"></i>
+                        </div>
+                        <div class="role-info">
+                            <h3>主持人</h3>
+                            <p>发言人 1</p>
+                        </div>
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-header">
+                            <span class="control-label">声纹种子</span>
+                            <span class="control-value" id="host-seed-value">3333</span>
+                        </div>
+                        <input type="range" id="host-seed" min="1" max="9999" value="3333">
+                    </div>
+                    
+                    <div class="control-row">
+                        <div class="control">
+                            <div class="control-header">
+                                <span class="control-label">语速</span>
+                                <span class="control-value" id="host-speed-value">5</span>
+                            </div>
+                            <input type="range" id="host-speed" min="1" max="9" value="5">
+                        </div>
+                        <div class="control">
+                            <div class="control-header">
+                                <span class="control-label">情感</span>
+                                <span class="control-value" id="host-emotion-value">3</span>
+                            </div>
+                            <input type="range" id="host-emotion" min="0" max="9" value="3">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Guest -->
+                <div class="role-card">
+                    <div class="role-header">
+                        <div class="role-avatar guest">
+                            <i data-lucide="user"></i>
+                        </div>
+                        <div class="role-info">
+                            <h3>嘉宾</h3>
+                            <p>发言人 2</p>
+                        </div>
+                    </div>
+                    
+                    <div class="control">
+                        <div class="control-header">
+                            <span class="control-label">声纹种子</span>
+                            <span class="control-value" id="guest-seed-value">5674</span>
+                        </div>
+                        <input type="range" id="guest-seed" min="1" max="9999" value="5674">
+                    </div>
+                    
+                    <div class="control-row">
+                        <div class="control">
+                            <div class="control-header">
+                                <span class="control-label">语速</span>
+                                <span class="control-value" id="guest-speed-value">5</span>
+                            </div>
+                            <input type="range" id="guest-speed" min="1" max="9" value="5">
+                        </div>
+                        <div class="control">
+                            <div class="control-header">
+                                <span class="control-label">情感</span>
+                                <span class="control-value" id="guest-emotion-value">5</span>
+                            </div>
+                            <input type="range" id="guest-emotion" min="0" max="9" value="5">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <!-- Generate -->
+                <button class="btn btn-primary" id="generate-btn">
+                    <i data-lucide="sparkles"></i>
+                    开始生成
                 </button>
                 
-                <div class="progress-container" id="progress-container">
+                <div class="progress-section" id="progress-section">
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
                     </div>
@@ -612,27 +774,33 @@
                 </div>
                 
                 <div class="audio-section" id="audio-section">
-                    <div class="audio-player">
+                    <div class="audio-card">
                         <audio controls id="audio-player">
                             <source src="" type="audio/wav">
                         </audio>
-                        <div class="audio-info">
-                            <span id="audio-duration">--:--</span>
-                            <a href="/api/audio" download="podcast.wav" class="btn-secondary" style="text-decoration: none;">下载</a>
+                        <div class="audio-actions">
+                            <span class="audio-duration" id="audio-duration">--:--</span>
+                            <a href="/api/audio" download="podcast.wav" class="btn-download">
+                                <i data-lucide="download"></i>
+                                下载音频
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
     
     <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
         // Elements
         const scriptInput = document.getElementById('script-input');
         const uploadZone = document.getElementById('upload-zone');
         const fileInput = document.getElementById('file-input');
         const generateBtn = document.getElementById('generate-btn');
-        const progressContainer = document.getElementById('progress-container');
+        const progressSection = document.getElementById('progress-section');
         const progressFill = document.getElementById('progress-fill');
         const progressText = document.getElementById('progress-text');
         const audioSection = document.getElementById('audio-section');
@@ -640,7 +808,7 @@
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
         
-        // Slider value displays
+        // Slider bindings
         const sliders = ['host-seed', 'host-speed', 'host-emotion', 'guest-seed', 'guest-speed', 'guest-emotion'];
         sliders.forEach(id => {
             const slider = document.getElementById(id);
@@ -650,7 +818,7 @@
             });
         });
         
-        // Parse stats
+        // Parse script
         let parseTimeout;
         scriptInput.addEventListener('input', () => {
             clearTimeout(parseTimeout);
@@ -759,7 +927,7 @@
             }
             
             generateBtn.disabled = true;
-            progressContainer.classList.add('active');
+            progressSection.classList.add('active');
             audioSection.classList.remove('active');
             progressFill.style.width = '0%';
             progressText.textContent = '准备中...';
@@ -784,17 +952,16 @@
                 if (!data.success) {
                     alert(data.error);
                     generateBtn.disabled = false;
-                    progressContainer.classList.remove('active');
+                    progressSection.classList.remove('active');
                     return;
                 }
                 
-                // Poll progress
                 pollProgress();
                 
             } catch (e) {
                 alert('请求失败');
                 generateBtn.disabled = false;
-                progressContainer.classList.remove('active');
+                progressSection.classList.remove('active');
             }
         });
         
@@ -812,12 +979,12 @@
                 } else if (data.status === 'generating') {
                     progressText.textContent = `生成中 ${Math.round(data.progress * 100)}%`;
                 } else if (data.status === 'complete') {
-                    progressText.textContent = '完成！';
+                    progressText.textContent = '完成';
                     progressFill.style.width = '100%';
                     generateBtn.disabled = false;
                     
-                    // Show audio
                     setTimeout(() => {
+                        progressSection.classList.remove('active');
                         audioSection.classList.add('active');
                         audioPlayer.src = '/api/audio?' + Date.now();
                         audioPlayer.load();
@@ -843,7 +1010,7 @@
         }
         
         function updateStatus(status, modelLoaded) {
-            statusDot.className = 'status-dot';
+            statusDot.className = 'status-indicator';
             
             if (status === 'loading') {
                 statusDot.classList.add('loading');
@@ -867,4 +1034,3 @@
     </script>
 </body>
 </html>
-
