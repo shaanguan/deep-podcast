@@ -908,19 +908,29 @@
                 return;
             }
             
-            // 初始化角色数据
+            // 初始化角色数据，确保 seed 严格不重复
+            const usedSeeds = new Set(Object.values(rolesData).map(r => r.seed));
+            
             speakers.forEach((id, idx) => {
                 if (!rolesData[id]) {
-                    // 交替分配预设声纹
-                    const preset = idx % 2 === 0 ? voicePresets[0] : voicePresets[3]; // 知性女声 / 通用男声
+                    // 交替分配预设声纹：女/男/女/男...
+                    const presetIndex = idx % 2 === 0 ? idx % 3 : 3 + (idx % 3); // 0,1,2 或 3,4,5
+                    let seed = voicePresets[presetIndex]?.value || voicePresets[0].value;
+                    
+                    // 如果 seed 已被使用，自动偏移确保差异
+                    while (usedSeeds.has(seed)) {
+                        seed = seed + 1000 + Math.floor(Math.random() * 500);
+                        if (seed > 9999) seed = seed % 9999 + 1;
+                    }
+                    usedSeeds.add(seed);
+                    
                     rolesData[id] = {
-                        preset: preset.value,
-                        seed: preset.value,
+                        preset: getPresetBySeed(seed).value === 'custom' ? 'custom' : seed,
+                        seed: seed,
                         speed: 5,
-                        oral: 2,
+                        oral: 0,
                         laugh: 0,
-                        break_: 4,
-                        temperature: 0.3
+                        break_: 3
                     };
                 }
             });
@@ -978,12 +988,6 @@
                                        oninput="updateRole('${id}', 'break_', this.value); this.nextElementSibling.textContent = this.value">
                                 <span class="param-value">${role.break_}</span>
                             </div>
-                            <div class="param-item">
-                                <span class="param-label">随机性</span>
-                                <input type="range" min="0" max="10" value="${role.temperature * 10}"
-                                       oninput="updateRole('${id}', 'temperature', this.value / 10); this.nextElementSibling.textContent = (this.value / 10).toFixed(1)">
-                                <span class="param-value">${role.temperature.toFixed(1)}</span>
-                            </div>
                         </div>
                     </div>
                 `;
@@ -1022,11 +1026,7 @@
         }
         
         function updateRole(roleId, field, value) {
-            if (field === 'temperature') {
-                rolesData[roleId][field] = parseFloat(value);
-            } else {
-                rolesData[roleId][field] = parseInt(value);
-            }
+            rolesData[roleId][field] = parseInt(value);
         }
         
         function updateStats(s) {
@@ -1126,8 +1126,7 @@
                     speed: data.speed,
                     oral: data.oral,
                     laugh: data.laugh,
-                    break_: data.break_,
-                    temperature: data.temperature
+                    break_: data.break_
                 };
             });
             
