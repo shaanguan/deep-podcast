@@ -75,13 +75,13 @@ def ensure_model_loaded() -> tuple:
     
     try:
         APP_STATE.status = "loading"
-        APP_STATE.progress = 0.1
+        APP_STATE.progress = 0.02
         
         APP_STATE.config = load_config()
         APP_STATE.role_manager = RoleManager(APP_STATE.config)
         APP_STATE.generator = AudioGenerator(APP_STATE.config, APP_STATE.role_manager)
         
-        APP_STATE.progress = 0.3
+        APP_STATE.progress = 0.05
         
         temp_dir = str(PROJECT_ROOT / "temp")
         assets_dir = str(PROJECT_ROOT / "assets")
@@ -90,7 +90,7 @@ def ensure_model_loaded() -> tuple:
             return False, "模型加载失败"
         
         APP_STATE.model_loaded = True
-        APP_STATE.progress = 1.0
+        APP_STATE.progress = 0.1  # 模型加载完成占 10%
         APP_STATE.status = "ready"
         return True, "模型加载成功"
         
@@ -254,12 +254,10 @@ def api_generate():
             
             output_path = str(PROJECT_ROOT / "data" / "output" / "podcast.wav")
             
-            # 生成
-            APP_STATE.progress = 0.1
-            
+            # 生成音频
             total = APP_STATE.total_segments
             
-            # 监控进度
+            # 监控进度：10%（模型已加载）-> 95%（生成完成）-> 100%（合并完成）
             def monitor_progress():
                 while APP_STATE.is_generating:
                     temp_dir = PROJECT_ROOT / "temp"
@@ -267,8 +265,9 @@ def api_generate():
                         done = len(list(temp_dir.glob("*.wav")))
                         APP_STATE.current_segment = done
                         if total > 0:
+                            # 10% + 85% * (完成数/总数)
                             APP_STATE.progress = 0.1 + (done / total) * 0.85
-                    time.sleep(0.5)
+                    time.sleep(0.3)
             
             monitor_thread = threading.Thread(target=monitor_progress)
             monitor_thread.start()
