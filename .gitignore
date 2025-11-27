@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+temp/
+data/output/*.wav
+data/output/*.mp3
+data/input/*.docx
+assets/room_tone.wav
+test_output.wav
+
+# Logs
+*.log
+
+# Cache
+.cache/
+*.cache
+
+# Model files (too large for git)
+*.pt
+*.pth
+*.bin
+*.onnx
+*.safetensors
+asset/
+.asset/
+

@@ -1,0 +1,27 @@
+# Deep Podcast - ChatTTS 多角色配音应用
+# Python >= 3.9, < 3.12
+
+# 核心依赖 (版本锁定以确保兼容性)
+ChatTTS==0.2.1
+torch>=2.1.0,<2.5.0
+torchaudio>=2.1.0,<2.5.0
+transformers>=4.41.1,<4.45.0
+soundfile
+numpy<2.0.0
+
+# 配置与工具
+pyyaml
+tqdm
+colorama
+
+# 音频处理
+pydub
+
+# 文本预处理
+cn2an
+python-docx           # 解析 Word 文档
+
+# Web UI
+gradio==4.36.0
+pydantic>=2.0,<2.10
+
