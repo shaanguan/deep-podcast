@@ -5,16 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deep Podcast - AI 播客生成器</title>
     
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- Lucide Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        /* ===== Reset & Base ===== */
         *, *::before, *::after {
             margin: 0;
             padding: 0;
@@ -22,72 +18,53 @@
         }
         
         :root {
-            /* Colors */
             --bg-0: #09090b;
-            --bg-1: #0c0c0f;
-            --bg-2: #131316;
-            --bg-3: #1a1a1f;
-            --bg-4: #222228;
-            --bg-hover: #2a2a32;
+            --bg-1: #0c0c0e;
+            --bg-2: #111113;
+            --bg-3: #18181b;
+            --bg-4: #1f1f23;
+            --bg-5: #27272a;
             
-            --border-1: #1f1f24;
-            --border-2: #2a2a32;
-            --border-3: #3a3a44;
+            --border-1: #1c1c1f;
+            --border-2: #27272a;
             
-            --text-1: #fafafa;
-            --text-2: #a1a1aa;
-            --text-3: #71717a;
-            --text-4: #52525b;
+            --text-ui: #a1a1aa;
+            --text-ui-muted: #71717a;
+            --text-content: #52525b;
+            --text-value: #d4d4d8;
+            --text-heading: #e4e4e7;
             
             --accent: #8b5cf6;
             --accent-hover: #a78bfa;
-            --accent-muted: rgba(139, 92, 246, 0.15);
+            --accent-dim: rgba(139, 92, 246, 0.12);
             
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --error: #ef4444;
+            --host: #ec4899;
+            --guest: #3b82f6;
             
-            /* Typography */
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
-            
-            /* Spacing */
-            --radius-sm: 6px;
-            --radius-md: 8px;
-            --radius-lg: 12px;
-            --radius-xl: 16px;
+            --font-sans: 'Inter', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
         
-        html {
-            font-size: 14px;
-        }
+        html { font-size: 14px; }
         
         body {
             font-family: var(--font-sans);
             background: var(--bg-0);
-            color: var(--text-1);
+            color: var(--text-ui);
             line-height: 1.5;
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
         
-        /* ===== Layout ===== */
-        .app {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        
-        /* ===== Header ===== */
+        /* Header */
         .header {
-            height: 56px;
+            height: 52px;
             background: var(--bg-1);
             border-bottom: 1px solid var(--border-1);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 24px;
+            padding: 0 20px;
             position: sticky;
             top: 0;
             z-index: 100;
@@ -96,72 +73,61 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         
         .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--accent), #c084fc);
-            border-radius: var(--radius-md);
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
         }
         
-        .logo-icon svg {
-            width: 18px;
-            height: 18px;
-        }
+        .logo-icon svg { width: 14px; height: 14px; }
         
         .logo-text {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
+            color: var(--text-heading);
             letter-spacing: -0.3px;
-            color: var(--text-1);
         }
         
-        .header-status {
+        .status {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            background: var(--bg-2);
-            border: 1px solid var(--border-1);
-            border-radius: var(--radius-md);
+            gap: 6px;
             font-size: 12px;
-            color: var(--text-2);
+            color: var(--text-ui-muted);
         }
         
-        .status-indicator {
+        .status-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: var(--text-4);
+            background: var(--text-ui-muted);
         }
         
-        .status-indicator.ready { background: var(--success); }
-        .status-indicator.loading { background: var(--warning); animation: pulse 1.5s ease-in-out infinite; }
-        .status-indicator.error { background: var(--error); }
+        .status-dot.ready { background: #22c55e; }
+        .status-dot.loading { background: #f59e0b; animation: pulse 1.5s infinite; }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.4; }
         }
         
-        /* ===== Main Content ===== */
+        /* Main */
         .main {
-            flex: 1;
             display: grid;
-            grid-template-columns: 1fr 360px;
-            background: var(--bg-0);
+            grid-template-columns: 1fr 340px;
+            min-height: calc(100vh - 52px);
         }
         
-        /* ===== Panel ===== */
         .panel {
-            padding: 24px;
-            overflow-y: auto;
+            padding: 20px;
         }
         
         .panel-left {
@@ -173,234 +139,179 @@
             background: var(--bg-1);
         }
         
-        .panel-header {
+        .section-title {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        
-        .panel-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
+            gap: 6px;
+            font-size: 11px;
             font-weight: 600;
-            color: var(--text-3);
+            color: var(--text-ui-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-bottom: 16px;
         }
         
-        .panel-title svg {
-            width: 14px;
-            height: 14px;
-            color: var(--text-4);
+        .section-title svg {
+            width: 12px;
+            height: 12px;
+            opacity: 0.6;
         }
         
-        /* ===== Upload Zone ===== */
+        /* Upload */
         .upload-zone {
             border: 1px dashed var(--border-2);
-            border-radius: var(--radius-lg);
-            padding: 24px;
+            border-radius: 8px;
+            padding: 20px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 16px;
-            background: var(--bg-1);
+            transition: all 0.15s;
+            margin-bottom: 12px;
+            background: var(--bg-2);
         }
         
         .upload-zone:hover {
             border-color: var(--accent);
-            background: var(--accent-muted);
+            background: var(--accent-dim);
         }
         
-        .upload-zone.dragover {
-            border-color: var(--accent);
-            background: var(--accent-muted);
-        }
-        
-        .upload-icon {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 12px;
-            color: var(--text-4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .upload-icon svg {
-            width: 24px;
-            height: 24px;
+        .upload-zone svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-ui-muted);
+            margin-bottom: 8px;
         }
         
         .upload-text {
-            font-size: 13px;
-            color: var(--text-2);
-            margin-bottom: 4px;
+            font-size: 12px;
+            color: var(--text-ui-muted);
         }
         
         .upload-hint {
             font-size: 11px;
-            color: var(--text-4);
+            color: var(--text-content);
+            margin-top: 4px;
         }
         
-        /* ===== Editor ===== */
-        .editor-wrapper {
-            position: relative;
-        }
-        
+        /* Editor */
         .editor {
             width: 100%;
-            min-height: 380px;
+            min-height: 360px;
             background: var(--bg-2);
             border: 1px solid var(--border-1);
-            border-radius: var(--radius-lg);
-            padding: 16px;
-            color: var(--text-1);
+            border-radius: 8px;
+            padding: 14px;
+            color: var(--text-content);
             font-family: var(--font-mono);
-            font-size: 13px;
-            line-height: 1.7;
+            font-size: 12px;
+            line-height: 1.8;
             resize: none;
             outline: none;
-            transition: border-color 0.2s ease;
         }
         
         .editor:focus {
-            border-color: var(--accent);
+            border-color: var(--border-2);
         }
         
         .editor::placeholder {
-            color: var(--text-4);
+            color: var(--text-content);
+            opacity: 0.6;
         }
         
-        /* ===== Stats Bar ===== */
-        .stats-bar {
+        /* Stats */
+        .stats {
             display: flex;
-            gap: 20px;
-            padding: 14px 0;
-            margin-top: 16px;
+            gap: 16px;
+            padding: 12px 0;
+            margin-top: 12px;
             border-top: 1px solid var(--border-1);
         }
         
         .stat {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            font-size: 11px;
         }
         
         .stat-label {
-            font-size: 12px;
-            color: var(--text-4);
+            color: var(--text-content);
         }
         
         .stat-value {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-2);
+            color: var(--text-ui);
             font-family: var(--font-mono);
+            margin-left: 4px;
         }
         
-        /* ===== Role Card ===== */
-        .role-card {
+        /* Role Section */
+        .role-section {
             background: var(--bg-2);
             border: 1px solid var(--border-1);
-            border-radius: var(--radius-lg);
-            padding: 16px;
-            margin-bottom: 16px;
-            transition: border-color 0.2s ease;
-        }
-        
-        .role-card:hover {
-            border-color: var(--border-2);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
         }
         
         .role-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        
-        .role-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-        
-        .role-avatar svg {
-            width: 20px;
-            height: 20px;
-        }
-        
-        .role-avatar.host {
-            background: linear-gradient(135deg, #ec4899, #f43f5e);
-        }
-        
-        .role-avatar.guest {
-            background: linear-gradient(135deg, #3b82f6, #06b6d4);
-        }
-        
-        .role-info h3 {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-1);
-            margin-bottom: 2px;
-        }
-        
-        .role-info p {
-            font-size: 11px;
-            color: var(--text-4);
-        }
-        
-        /* ===== Controls ===== */
-        .control {
-            margin-bottom: 14px;
-        }
-        
-        .control:last-child {
-            margin-bottom: 0;
-        }
-        
-        .control-header {
-            display: flex;
             justify-content: space-between;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-1);
+        }
+        
+        .role-name {
+            display: flex;
             align-items: center;
-            margin-bottom: 8px;
+            gap: 8px;
         }
         
-        .control-label {
-            font-size: 11px;
+        .role-indicator {
+            width: 3px;
+            height: 16px;
+            border-radius: 2px;
+        }
+        
+        .role-indicator.host { background: var(--host); }
+        .role-indicator.guest { background: var(--guest); }
+        
+        .role-label {
+            font-size: 13px;
             font-weight: 500;
-            color: var(--text-3);
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+            color: var(--text-heading);
         }
         
-        .control-value {
+        .role-id {
             font-size: 11px;
-            font-weight: 600;
-            font-family: var(--font-mono);
-            color: var(--text-2);
-            background: var(--bg-3);
-            padding: 2px 6px;
-            border-radius: var(--radius-sm);
+            color: var(--text-content);
         }
         
-        .control-row {
+        /* Slider Group - 格式塔设计 */
+        .slider-group {
             display: grid;
-            grid-template-columns: 1fr 1fr;
             gap: 12px;
         }
         
-        /* ===== Slider ===== */
-        input[type="range"] {
+        .slider-item {
+            display: grid;
+            grid-template-columns: 60px 1fr 40px;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .slider-label {
+            font-size: 11px;
+            color: var(--text-ui-muted);
+        }
+        
+        .slider-track {
+            position: relative;
+            height: 24px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .slider-track input {
             width: 100%;
-            height: 4px;
+            height: 3px;
             -webkit-appearance: none;
             appearance: none;
             background: var(--bg-4);
@@ -409,429 +320,369 @@
             cursor: pointer;
         }
         
-        input[type="range"]::-webkit-slider-thumb {
+        .slider-track input::-webkit-slider-thumb {
             -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             background: var(--accent);
             cursor: pointer;
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            transition: transform 0.1s;
         }
         
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
-            box-shadow: 0 0 0 4px var(--accent-muted);
+        .slider-track input::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
         }
         
-        input[type="range"]::-moz-range-thumb {
-            width: 14px;
-            height: 14px;
-            border: none;
-            border-radius: 50%;
-            background: var(--accent);
-            cursor: pointer;
+        .slider-value {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--text-value);
+            text-align: right;
+            background: var(--bg-3);
+            padding: 3px 6px;
+            border-radius: 4px;
         }
         
-        /* ===== Divider ===== */
+        /* Divider */
         .divider {
             height: 1px;
             background: var(--border-1);
-            margin: 20px 0;
+            margin: 16px 0;
         }
         
-        /* ===== Buttons ===== */
+        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 8px 14px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
-            border-radius: var(--radius-md);
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.15s;
             border: none;
             outline: none;
         }
         
-        .btn svg {
-            width: 14px;
-            height: 14px;
-        }
+        .btn svg { width: 12px; height: 12px; }
         
         .btn-ghost {
+            padding: 6px 10px;
             background: transparent;
-            color: var(--text-2);
+            color: var(--text-ui-muted);
             border: 1px solid var(--border-2);
         }
         
         .btn-ghost:hover {
             background: var(--bg-3);
-            color: var(--text-1);
+            color: var(--text-ui);
         }
         
         .btn-primary {
+            width: 100%;
+            padding: 12px;
             background: linear-gradient(135deg, var(--accent), #a855f7);
             color: white;
             font-weight: 600;
-            padding: 14px 24px;
-            border-radius: var(--radius-lg);
-            width: 100%;
-            font-size: 14px;
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25);
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
         }
         
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-1px);
-            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.35);
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
         }
         
         .btn-primary:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
         
-        /* ===== Progress ===== */
+        /* Progress */
         .progress-section {
-            margin-top: 16px;
+            margin-top: 12px;
             display: none;
         }
         
-        .progress-section.active {
-            display: block;
-        }
+        .progress-section.active { display: block; }
         
         .progress-bar {
-            height: 3px;
+            height: 2px;
             background: var(--bg-4);
-            border-radius: 2px;
+            border-radius: 1px;
             overflow: hidden;
         }
         
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--accent), #a855f7);
-            border-radius: 2px;
-            transition: width 0.3s ease;
+            background: var(--accent);
+            transition: width 0.3s;
         }
         
         .progress-text {
             font-size: 11px;
-            color: var(--text-3);
+            color: var(--text-ui-muted);
             text-align: center;
             margin-top: 8px;
         }
         
-        /* ===== Audio Player ===== */
+        /* Audio */
         .audio-section {
-            margin-top: 16px;
+            margin-top: 12px;
             display: none;
         }
         
-        .audio-section.active {
-            display: block;
-        }
+        .audio-section.active { display: block; }
         
         .audio-card {
             background: var(--bg-2);
             border: 1px solid var(--border-1);
-            border-radius: var(--radius-lg);
-            padding: 16px;
+            border-radius: 8px;
+            padding: 12px;
         }
         
         .audio-card audio {
             width: 100%;
-            height: 36px;
-            border-radius: var(--radius-md);
+            height: 32px;
         }
         
-        .audio-actions {
+        .audio-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 12px;
+            margin-top: 10px;
         }
         
         .audio-duration {
-            font-size: 12px;
+            font-size: 11px;
             font-family: var(--font-mono);
-            color: var(--text-3);
+            color: var(--text-ui-muted);
         }
         
         .btn-download {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-2);
+            gap: 4px;
+            padding: 5px 10px;
+            font-size: 11px;
+            color: var(--text-ui-muted);
             background: var(--bg-3);
             border: 1px solid var(--border-2);
-            border-radius: var(--radius-md);
+            border-radius: 5px;
             text-decoration: none;
-            transition: all 0.15s ease;
+            transition: all 0.15s;
         }
         
         .btn-download:hover {
             background: var(--bg-4);
-            color: var(--text-1);
+            color: var(--text-ui);
         }
         
-        .btn-download svg {
-            width: 12px;
-            height: 12px;
+        .btn-download svg { width: 11px; height: 11px; }
+        
+        #file-input { display: none; }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
-        /* ===== Hidden ===== */
-        #file-input {
-            display: none;
-        }
-        
-        /* ===== Responsive ===== */
         @media (max-width: 900px) {
-            .main {
-                grid-template-columns: 1fr;
-            }
-            
-            .panel-left {
-                border-right: none;
-                border-bottom: 1px solid var(--border-1);
-            }
+            .main { grid-template-columns: 1fr; }
+            .panel-left { border-right: none; border-bottom: 1px solid var(--border-1); }
         }
     </style>
 </head>
 <body>
-    <div class="app">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo">
-                <div class="logo-icon">
-                    <i data-lucide="mic"></i>
-                </div>
-                <span class="logo-text">Deep Podcast</span>
-            </div>
-            <div class="header-status">
-                <span class="status-indicator" id="status-dot"></span>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon"><i data-lucide="mic"></i></div>
+            <span class="logo-text">Deep Podcast</span>
+        </div>
+        <div class="header-actions">
+            <div class="status">
+                <span class="status-dot" id="status-dot"></span>
                 <span id="status-text">未加载</span>
             </div>
-        </header>
+        </div>
+    </header>
+    
+    <main class="main">
+        <div class="panel panel-left">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <span class="section-title" style="margin-bottom: 0;">
+                    <i data-lucide="file-text"></i>
+                    脚本
+                </span>
+                <button class="btn btn-ghost" id="load-sample">
+                    <i data-lucide="file-plus"></i>
+                    示例
+                </button>
+            </div>
+            
+            <div class="upload-zone" id="upload-zone">
+                <i data-lucide="upload-cloud"></i>
+                <div class="upload-text">拖放或点击上传</div>
+                <div class="upload-hint">TXT / DOCX / JSON / MD</div>
+            </div>
+            <input type="file" id="file-input" accept=".txt,.docx,.json,.md">
+            
+            <textarea class="editor" id="script-input" placeholder="发言人1 大家好，欢迎收听本期节目！
+
+发言人2 今天我们来聊一个很有意思的话题..."></textarea>
+            
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-label">对话</span>
+                    <span class="stat-value" id="stat-dialogues">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">角色</span>
+                    <span class="stat-value" id="stat-speakers">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">字数</span>
+                    <span class="stat-value" id="stat-chars">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">时长</span>
+                    <span class="stat-value" id="stat-duration">0:00</span>
+                </div>
+            </div>
+        </div>
         
-        <!-- Main Content -->
-        <main class="main">
-            <!-- Left Panel: Editor -->
-            <div class="panel panel-left">
-                <div class="panel-header">
-                    <span class="panel-title">
-                        <i data-lucide="file-text"></i>
-                        脚本编辑器
-                    </span>
-                    <button class="btn btn-ghost" id="load-sample">
-                        <i data-lucide="file-plus"></i>
-                        加载示例
-                    </button>
+        <div class="panel panel-right">
+            <span class="section-title">
+                <i data-lucide="sliders-horizontal"></i>
+                配置
+            </span>
+            
+            <!-- Host -->
+            <div class="role-section">
+                <div class="role-header">
+                    <div class="role-name">
+                        <div class="role-indicator host"></div>
+                        <span class="role-label">主持人</span>
+                    </div>
+                    <span class="role-id">发言人 1</span>
                 </div>
                 
-                <div class="upload-zone" id="upload-zone">
-                    <div class="upload-icon">
-                        <i data-lucide="upload-cloud"></i>
+                <div class="slider-group">
+                    <div class="slider-item">
+                        <span class="slider-label">声纹</span>
+                        <div class="slider-track">
+                            <input type="range" id="host-seed" min="1" max="9999" value="3333">
+                        </div>
+                        <span class="slider-value" id="host-seed-value">3333</span>
                     </div>
-                    <div class="upload-text">拖放文件到此处，或点击上传</div>
-                    <div class="upload-hint">支持 TXT、DOCX、JSON、MD 格式</div>
-                </div>
-                <input type="file" id="file-input" accept=".txt,.docx,.json,.md">
-                
-                <div class="editor-wrapper">
-                    <textarea class="editor" id="script-input" placeholder="发言人1 大家好，欢迎收听本期节目！
-
-发言人2 今天我们来聊一个很有意思的话题...
-
-发言人1 那我们开始吧"></textarea>
-                </div>
-                
-                <div class="stats-bar">
-                    <div class="stat">
-                        <span class="stat-label">对话</span>
-                        <span class="stat-value" id="stat-dialogues">0</span>
+                    <div class="slider-item">
+                        <span class="slider-label">语速</span>
+                        <div class="slider-track">
+                            <input type="range" id="host-speed" min="1" max="9" value="5">
+                        </div>
+                        <span class="slider-value" id="host-speed-value">5</span>
                     </div>
-                    <div class="stat">
-                        <span class="stat-label">角色</span>
-                        <span class="stat-value" id="stat-speakers">0</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">字数</span>
-                        <span class="stat-value" id="stat-chars">0</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">预估</span>
-                        <span class="stat-value" id="stat-duration">0:00</span>
+                    <div class="slider-item">
+                        <span class="slider-label">情感</span>
+                        <div class="slider-track">
+                            <input type="range" id="host-emotion" min="0" max="9" value="3">
+                        </div>
+                        <span class="slider-value" id="host-emotion-value">3</span>
                     </div>
                 </div>
             </div>
             
-            <!-- Right Panel: Settings -->
-            <div class="panel panel-right">
-                <div class="panel-header">
-                    <span class="panel-title">
-                        <i data-lucide="settings-2"></i>
-                        角色配置
-                    </span>
+            <!-- Guest -->
+            <div class="role-section">
+                <div class="role-header">
+                    <div class="role-name">
+                        <div class="role-indicator guest"></div>
+                        <span class="role-label">嘉宾</span>
+                    </div>
+                    <span class="role-id">发言人 2</span>
                 </div>
                 
-                <!-- Host -->
-                <div class="role-card">
-                    <div class="role-header">
-                        <div class="role-avatar host">
-                            <i data-lucide="user"></i>
+                <div class="slider-group">
+                    <div class="slider-item">
+                        <span class="slider-label">声纹</span>
+                        <div class="slider-track">
+                            <input type="range" id="guest-seed" min="1" max="9999" value="5674">
                         </div>
-                        <div class="role-info">
-                            <h3>主持人</h3>
-                            <p>发言人 1</p>
-                        </div>
+                        <span class="slider-value" id="guest-seed-value">5674</span>
                     </div>
-                    
-                    <div class="control">
-                        <div class="control-header">
-                            <span class="control-label">声纹种子</span>
-                            <span class="control-value" id="host-seed-value">3333</span>
-                        </div>
-                        <input type="range" id="host-seed" min="1" max="9999" value="3333">
-                    </div>
-                    
-                    <div class="control-row">
-                        <div class="control">
-                            <div class="control-header">
-                                <span class="control-label">语速</span>
-                                <span class="control-value" id="host-speed-value">5</span>
-                            </div>
-                            <input type="range" id="host-speed" min="1" max="9" value="5">
-                        </div>
-                        <div class="control">
-                            <div class="control-header">
-                                <span class="control-label">情感</span>
-                                <span class="control-value" id="host-emotion-value">3</span>
-                            </div>
-                            <input type="range" id="host-emotion" min="0" max="9" value="3">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Guest -->
-                <div class="role-card">
-                    <div class="role-header">
-                        <div class="role-avatar guest">
-                            <i data-lucide="user"></i>
-                        </div>
-                        <div class="role-info">
-                            <h3>嘉宾</h3>
-                            <p>发言人 2</p>
-                        </div>
-                    </div>
-                    
-                    <div class="control">
-                        <div class="control-header">
-                            <span class="control-label">声纹种子</span>
-                            <span class="control-value" id="guest-seed-value">5674</span>
-                        </div>
-                        <input type="range" id="guest-seed" min="1" max="9999" value="5674">
-                    </div>
-                    
-                    <div class="control-row">
-                        <div class="control">
-                            <div class="control-header">
-                                <span class="control-label">语速</span>
-                                <span class="control-value" id="guest-speed-value">5</span>
-                            </div>
+                    <div class="slider-item">
+                        <span class="slider-label">语速</span>
+                        <div class="slider-track">
                             <input type="range" id="guest-speed" min="1" max="9" value="5">
                         </div>
-                        <div class="control">
-                            <div class="control-header">
-                                <span class="control-label">情感</span>
-                                <span class="control-value" id="guest-emotion-value">5</span>
-                            </div>
+                        <span class="slider-value" id="guest-speed-value">5</span>
+                    </div>
+                    <div class="slider-item">
+                        <span class="slider-label">情感</span>
+                        <div class="slider-track">
                             <input type="range" id="guest-emotion" min="0" max="9" value="5">
                         </div>
-                    </div>
-                </div>
-                
-                <div class="divider"></div>
-                
-                <!-- Generate -->
-                <button class="btn btn-primary" id="generate-btn">
-                    <i data-lucide="sparkles"></i>
-                    开始生成
-                </button>
-                
-                <div class="progress-section" id="progress-section">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
-                    </div>
-                    <div class="progress-text" id="progress-text">准备中...</div>
-                </div>
-                
-                <div class="audio-section" id="audio-section">
-                    <div class="audio-card">
-                        <audio controls id="audio-player">
-                            <source src="" type="audio/wav">
-                        </audio>
-                        <div class="audio-actions">
-                            <span class="audio-duration" id="audio-duration">--:--</span>
-                            <a href="/api/audio" download="podcast.wav" class="btn-download">
-                                <i data-lucide="download"></i>
-                                下载音频
-                            </a>
-                        </div>
+                        <span class="slider-value" id="guest-emotion-value">5</span>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+            
+            <div class="divider"></div>
+            
+            <button class="btn btn-primary" id="generate-btn">
+                <i data-lucide="sparkles"></i>
+                开始生成
+            </button>
+            
+            <div class="progress-section" id="progress-section">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progress-text">准备中...</div>
+            </div>
+            
+            <div class="audio-section" id="audio-section">
+                <div class="audio-card">
+                    <audio controls id="audio-player"></audio>
+                    <div class="audio-footer">
+                        <span class="audio-duration" id="audio-duration">--:--</span>
+                        <a href="/api/audio" download="podcast.wav" class="btn-download">
+                            <i data-lucide="download"></i>
+                            下载
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
     
     <script>
-        // Initialize Lucide icons
         lucide.createIcons();
         
-        // Elements
-        const scriptInput = document.getElementById('script-input');
-        const uploadZone = document.getElementById('upload-zone');
-        const fileInput = document.getElementById('file-input');
-        const generateBtn = document.getElementById('generate-btn');
-        const progressSection = document.getElementById('progress-section');
-        const progressFill = document.getElementById('progress-fill');
-        const progressText = document.getElementById('progress-text');
-        const audioSection = document.getElementById('audio-section');
-        const audioPlayer = document.getElementById('audio-player');
-        const statusDot = document.getElementById('status-dot');
-        const statusText = document.getElementById('status-text');
+        const $ = id => document.getElementById(id);
         
-        // Slider bindings
         const sliders = ['host-seed', 'host-speed', 'host-emotion', 'guest-seed', 'guest-speed', 'guest-emotion'];
         sliders.forEach(id => {
-            const slider = document.getElementById(id);
-            const display = document.getElementById(id + '-value');
-            slider.addEventListener('input', () => {
-                display.textContent = slider.value;
+            $(id).addEventListener('input', e => {
+                $(id + '-value').textContent = e.target.value;
             });
         });
         
-        // Parse script
         let parseTimeout;
-        scriptInput.addEventListener('input', () => {
+        $('script-input').addEventListener('input', () => {
             clearTimeout(parseTimeout);
             parseTimeout = setTimeout(parseScript, 500);
         });
         
         async function parseScript() {
-            const text = scriptInput.value;
+            const text = $('script-input').value;
             if (!text.trim()) {
                 updateStats({ dialogues: 0, speakers: 0, chars: 0, duration: 0 });
                 return;
             }
-            
             try {
                 const res = await fetch('/api/parse', {
                     method: 'POST',
@@ -839,70 +690,44 @@
                     body: JSON.stringify({ text })
                 });
                 const data = await res.json();
-                if (data.success) {
-                    updateStats(data.stats);
-                }
-            } catch (e) {
-                console.error(e);
-            }
+                if (data.success) updateStats(data.stats);
+            } catch (e) {}
         }
         
-        function updateStats(stats) {
-            document.getElementById('stat-dialogues').textContent = stats.dialogues;
-            document.getElementById('stat-speakers').textContent = stats.speakers;
-            document.getElementById('stat-chars').textContent = stats.chars;
-            const min = Math.floor(stats.duration / 60);
-            const sec = stats.duration % 60;
-            document.getElementById('stat-duration').textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+        function updateStats(s) {
+            $('stat-dialogues').textContent = s.dialogues;
+            $('stat-speakers').textContent = s.speakers;
+            $('stat-chars').textContent = s.chars;
+            const m = Math.floor(s.duration / 60);
+            const sec = s.duration % 60;
+            $('stat-duration').textContent = `${m}:${sec.toString().padStart(2, '0')}`;
         }
         
-        // File upload
-        uploadZone.addEventListener('click', () => fileInput.click());
-        
-        uploadZone.addEventListener('dragover', (e) => {
+        $('upload-zone').addEventListener('click', () => $('file-input').click());
+        $('upload-zone').addEventListener('dragover', e => { e.preventDefault(); e.target.closest('.upload-zone').style.borderColor = 'var(--accent)'; });
+        $('upload-zone').addEventListener('dragleave', e => { e.target.closest('.upload-zone').style.borderColor = ''; });
+        $('upload-zone').addEventListener('drop', e => {
             e.preventDefault();
-            uploadZone.classList.add('dragover');
+            e.target.closest('.upload-zone').style.borderColor = '';
+            if (e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]);
         });
-        
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.classList.remove('dragover');
-        });
-        
-        uploadZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadZone.classList.remove('dragover');
-            const file = e.dataTransfer.files[0];
-            if (file) uploadFile(file);
-        });
-        
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files[0]) uploadFile(fileInput.files[0]);
-        });
+        $('file-input').addEventListener('change', e => { if (e.target.files[0]) uploadFile(e.target.files[0]); });
         
         async function uploadFile(file) {
-            const formData = new FormData();
-            formData.append('file', file);
-            
+            const fd = new FormData();
+            fd.append('file', file);
             try {
-                const res = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await fetch('/api/upload', { method: 'POST', body: fd });
                 const data = await res.json();
                 if (data.success) {
-                    scriptInput.value = data.text;
+                    $('script-input').value = data.text;
                     parseScript();
-                } else {
-                    alert(data.error);
                 }
-            } catch (e) {
-                alert('上传失败');
-            }
+            } catch (e) {}
         }
         
-        // Load sample
-        document.getElementById('load-sample').addEventListener('click', () => {
-            scriptInput.value = `发言人1 大家好，欢迎收听本期播客！今天我们要聊一个非常有意思的话题——人工智能正在如何改变我们的生活。
+        $('load-sample').addEventListener('click', () => {
+            $('script-input').value = `发言人1 大家好，欢迎收听本期播客！今天我们要聊一个非常有意思的话题——人工智能正在如何改变我们的生活。
 
 发言人2 没错，这个话题最近真的太火了。你看现在到处都在讨论AI，从ChatGPT到各种AI绘画工具，感觉一夜之间AI就无处不在了。
 
@@ -918,27 +743,23 @@
             parseScript();
         });
         
-        // Generate
-        generateBtn.addEventListener('click', async () => {
-            const text = scriptInput.value;
-            if (!text.trim()) {
-                alert('请先输入脚本内容');
-                return;
-            }
+        $('generate-btn').addEventListener('click', async () => {
+            const text = $('script-input').value;
+            if (!text.trim()) return alert('请先输入脚本');
             
-            generateBtn.disabled = true;
-            progressSection.classList.add('active');
-            audioSection.classList.remove('active');
-            progressFill.style.width = '0%';
-            progressText.textContent = '准备中...';
+            $('generate-btn').disabled = true;
+            $('progress-section').classList.add('active');
+            $('audio-section').classList.remove('active');
+            $('progress-fill').style.width = '0%';
+            $('progress-text').textContent = '准备中...';
             
             const settings = {
-                host_seed: parseInt(document.getElementById('host-seed').value),
-                host_speed: parseInt(document.getElementById('host-speed').value),
-                host_emotion: parseInt(document.getElementById('host-emotion').value),
-                guest_seed: parseInt(document.getElementById('guest-seed').value),
-                guest_speed: parseInt(document.getElementById('guest-speed').value),
-                guest_emotion: parseInt(document.getElementById('guest-emotion').value),
+                host_seed: +$('host-seed').value,
+                host_speed: +$('host-speed').value,
+                host_emotion: +$('host-emotion').value,
+                guest_seed: +$('guest-seed').value,
+                guest_speed: +$('guest-speed').value,
+                guest_emotion: +$('guest-emotion').value,
             };
             
             try {
@@ -947,21 +768,18 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text, settings })
                 });
-                
                 const data = await res.json();
                 if (!data.success) {
                     alert(data.error);
-                    generateBtn.disabled = false;
-                    progressSection.classList.remove('active');
+                    $('generate-btn').disabled = false;
+                    $('progress-section').classList.remove('active');
                     return;
                 }
-                
                 pollProgress();
-                
             } catch (e) {
                 alert('请求失败');
-                generateBtn.disabled = false;
-                progressSection.classList.remove('active');
+                $('generate-btn').disabled = false;
+                $('progress-section').classList.remove('active');
             }
         });
         
@@ -971,65 +789,52 @@
                 const data = await res.json();
                 
                 updateStatus(data.status, data.model_loaded);
-                
-                progressFill.style.width = (data.progress * 100) + '%';
+                $('progress-fill').style.width = (data.progress * 100) + '%';
                 
                 if (data.status === 'loading') {
-                    progressText.textContent = '加载模型中...';
+                    $('progress-text').textContent = '加载模型...';
                 } else if (data.status === 'generating') {
-                    progressText.textContent = `生成中 ${Math.round(data.progress * 100)}%`;
+                    $('progress-text').textContent = `生成中 ${Math.round(data.progress * 100)}%`;
                 } else if (data.status === 'complete') {
-                    progressText.textContent = '完成';
-                    progressFill.style.width = '100%';
-                    generateBtn.disabled = false;
-                    
+                    $('progress-text').textContent = '完成';
+                    $('progress-fill').style.width = '100%';
+                    $('generate-btn').disabled = false;
                     setTimeout(() => {
-                        progressSection.classList.remove('active');
-                        audioSection.classList.add('active');
-                        audioPlayer.src = '/api/audio?' + Date.now();
-                        audioPlayer.load();
+                        $('progress-section').classList.remove('active');
+                        $('audio-section').classList.add('active');
+                        $('audio-player').src = '/api/audio?' + Date.now();
+                        $('audio-player').load();
                     }, 500);
-                    
                     return;
                 } else if (data.status === 'error') {
-                    progressText.textContent = '生成失败';
-                    generateBtn.disabled = false;
+                    $('progress-text').textContent = '失败';
+                    $('generate-btn').disabled = false;
                     return;
                 }
                 
                 if (data.is_generating || data.status === 'loading') {
                     setTimeout(pollProgress, 500);
                 } else {
-                    generateBtn.disabled = false;
+                    $('generate-btn').disabled = false;
                 }
-                
             } catch (e) {
-                console.error(e);
                 setTimeout(pollProgress, 1000);
             }
         }
         
-        function updateStatus(status, modelLoaded) {
-            statusDot.className = 'status-indicator';
-            
-            if (status === 'loading') {
-                statusDot.classList.add('loading');
-                statusText.textContent = '加载中';
-            } else if (status === 'generating') {
-                statusDot.classList.add('loading');
-                statusText.textContent = '生成中';
-            } else if (status === 'complete' || (status === 'ready' && modelLoaded)) {
-                statusDot.classList.add('ready');
-                statusText.textContent = '就绪';
-            } else if (status === 'error') {
-                statusDot.classList.add('error');
-                statusText.textContent = '错误';
+        function updateStatus(status, loaded) {
+            $('status-dot').className = 'status-dot';
+            if (status === 'loading' || status === 'generating') {
+                $('status-dot').classList.add('loading');
+                $('status-text').textContent = status === 'loading' ? '加载中' : '生成中';
+            } else if (status === 'complete' || (status === 'ready' && loaded)) {
+                $('status-dot').classList.add('ready');
+                $('status-text').textContent = '就绪';
             } else {
-                statusText.textContent = '未加载';
+                $('status-text').textContent = '未加载';
             }
         }
         
-        // Initial parse
         parseScript();
     </script>
 </body>
