@@ -106,14 +106,14 @@
         /* Main */
         .main {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1.618fr 1fr;
             min-height: calc(100vh - 52px);
-            max-width: 1200px;
-            margin: 0 auto;
         }
         
         .panel {
             padding: 20px;
+            display: flex;
+            flex-direction: column;
         }
         
         .panel-left {
@@ -123,6 +123,10 @@
         
         .panel-right {
             background: var(--bg-1);
+        }
+        
+        .panel-right .role-section:last-of-type {
+            flex: 1;
         }
         
         .section-title {
