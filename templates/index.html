@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Podcast - AI 播客生成器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --bg-hover: #222222;
+            --border: #2a2a2a;
+            --border-light: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+        
+        .status-dot.ready { background: var(--success); }
+        .status-dot.loading { background: #f59e0b; animation: pulse 1s infinite; }
+        .status-dot.error { background: var(--error); }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 1px;
+            background: var(--border);
+            min-height: calc(100vh - 69px);
+        }
+        
+        .panel {
+            background: var(--bg-primary);
+            padding: 24px;
+        }
+        
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Editor */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .upload-zone {
+            border: 1px dashed var(--border-light);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .upload-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .upload-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .upload-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 400px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            color: var(--text-primary);
+            font-family: 'SF Mono', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .editor textarea:focus {
+            border-color: var(--accent);
+        }
+        
+        .editor textarea::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .stats-bar {
+            display: flex;
+            gap: 24px;
+            padding: 12px 0;
+            margin-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .stat-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        /* Settings Panel */
+        .settings-panel {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+        }
+        
+        .role-section {
+            margin-bottom: 28px;
+        }
+        
+        .role-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .role-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        
+        .role-avatar.host {
+            background: linear-gradient(135deg, #ec4899, #f43f5e);
+        }
+        
+        .role-avatar.guest {
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
+        }
+        
+        .role-info h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .role-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .control-group {
+            margin-bottom: 16px;
+        }
+        
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .control-label span {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .control-value {
+            font-size: 12px;
+            color: var(--text-primary);
+            font-weight: 500;
+            background: var(--bg-tertiary);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .control-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 24px 0;
+        }
+        
+        /* Generate Button */
+        .generate-section {
+            margin-top: auto;
+            padding-top: 24px;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+        }
+        
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* Progress */
+        .progress-container {
+            margin-top: 16px;
+            display: none;
+        }
+        
+        .progress-container.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #a855f7);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 8px;
+        }
+        
+        /* Audio Player */
+        .audio-section {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .audio-section.active {
+            display: block;
+        }
+        
+        .audio-player {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .audio-player audio {
+            width: 100%;
+            height: 40px;
+        }
+        
+        .audio-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* Buttons */
+        .btn-secondary {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* Hidden file input */
+        #file-input {
+            display: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main {
+                grid-template-columns: 1fr;
+            }
+            
+            .settings-panel {
+                border-left: none;
+                border-top: 1px solid var(--border);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">🎙️</div>
+            <span class="logo-text">Deep Podcast</span>
+        </div>
+        <div class="status-badge">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">未加载</span>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Left: Editor -->
+        <div class="panel editor-container">
+            <div class="panel-header">
+                <span class="panel-title">脚本编辑器</span>
+                <button class="btn-secondary" id="load-sample">加载示例</button>
+            </div>
+            
+            <div class="upload-zone" id="upload-zone">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">拖放文件到此处，或点击上传</div>
+                <div class="upload-hint">支持 .txt .docx .json .md</div>
+            </div>
+            <input type="file" id="file-input" accept=".txt,.docx,.json,.md">
+            
+            <div class="editor">
+                <textarea id="script-input" placeholder="发言人1 大家好，欢迎收听本期节目！今天我们来聊一个很有意思的话题。
+
+发言人2 没错，这个话题最近确实很火，我也一直想和大家分享一下我的看法。
+
+发言人1 那我们开始吧..."></textarea>
+            </div>
+            
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span>对话</span>
+                    <span class="stat-value" id="stat-dialogues">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>角色</span>
+                    <span class="stat-value" id="stat-speakers">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>字数</span>
+                    <span class="stat-value" id="stat-chars">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>预估</span>
+                    <span class="stat-value" id="stat-duration">0:00</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right: Settings -->
+        <div class="panel settings-panel">
+            <div class="panel-header">
+                <span class="panel-title">角色配置</span>
+            </div>
+            
+            <!-- Host -->
+            <div class="role-section">
+                <div class="role-header">
+                    <div class="role-avatar host">👩</div>
+                    <div class="role-info">
+                        <h3>主持人</h3>
+                        <p>发言人 1</p>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>声纹种子</span>
+                        <span class="control-value" id="host-seed-value">3333</span>
+                    </div>
+                    <input type="range" id="host-seed" min="1" max="9999" value="3333">
+                </div>
+                
+                <div class="control-row">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>语速</span>
+                            <span class="control-value" id="host-speed-value">5</span>
+                        </div>
+                        <input type="range" id="host-speed" min="1" max="9" value="5">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>情感</span>
+                            <span class="control-value" id="host-emotion-value">3</span>
+                        </div>
+                        <input type="range" id="host-emotion" min="0" max="9" value="3">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <!-- Guest -->
+            <div class="role-section">
+                <div class="role-header">
+                    <div class="role-avatar guest">👨</div>
+                    <div class="role-info">
+                        <h3>嘉宾</h3>
+                        <p>发言人 2</p>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>声纹种子</span>
+                        <span class="control-value" id="guest-seed-value">5674</span>
+                    </div>
+                    <input type="range" id="guest-seed" min="1" max="9999" value="5674">
+                </div>
+                
+                <div class="control-row">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>语速</span>
+                            <span class="control-value" id="guest-speed-value">5</span>
+                        </div>
+                        <input type="range" id="guest-speed" min="1" max="9" value="5">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>情感</span>
+                            <span class="control-value" id="guest-emotion-value">5</span>
+                        </div>
+                        <input type="range" id="guest-emotion" min="0" max="9" value="5">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <!-- Generate -->
+            <div class="generate-section">
+                <button class="generate-btn" id="generate-btn">
+                    <span>✨</span>
+                    <span>开始生成</span>
+                </button>
+                
+                <div class="progress-container" id="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text">准备中...</div>
+                </div>
+                
+                <div class="audio-section" id="audio-section">
+                    <div class="audio-player">
+                        <audio controls id="audio-player">
+                            <source src="" type="audio/wav">
+                        </audio>
+                        <div class="audio-info">
+                            <span id="audio-duration">--:--</span>
+                            <a href="/api/audio" download="podcast.wav" class="btn-secondary" style="text-decoration: none;">下载</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Elements
+        const scriptInput = document.getElementById('script-input');
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+        const generateBtn = document.getElementById('generate-btn');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const audioSection = document.getElementById('audio-section');
+        const audioPlayer = document.getElementById('audio-player');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        
+        // Slider value displays
+        const sliders = ['host-seed', 'host-speed', 'host-emotion', 'guest-seed', 'guest-speed', 'guest-emotion'];
+        sliders.forEach(id => {
+            const slider = document.getElementById(id);
+            const display = document.getElementById(id + '-value');
+            slider.addEventListener('input', () => {
+                display.textContent = slider.value;
+            });
+        });
+        
+        // Parse stats
+        let parseTimeout;
+        scriptInput.addEventListener('input', () => {
+            clearTimeout(parseTimeout);
+            parseTimeout = setTimeout(parseScript, 500);
+        });
+        
+        async function parseScript() {
+            const text = scriptInput.value;
+            if (!text.trim()) {
+                updateStats({ dialogues: 0, speakers: 0, chars: 0, duration: 0 });
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/parse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    updateStats(data.stats);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        function updateStats(stats) {
+            document.getElementById('stat-dialogues').textContent = stats.dialogues;
+            document.getElementById('stat-speakers').textContent = stats.speakers;
+            document.getElementById('stat-chars').textContent = stats.chars;
+            const min = Math.floor(stats.duration / 60);
+            const sec = stats.duration % 60;
+            document.getElementById('stat-duration').textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+        }
+        
+        // File upload
+        uploadZone.addEventListener('click', () => fileInput.click());
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) uploadFile(file);
+        });
+        
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files[0]) uploadFile(fileInput.files[0]);
+        });
+        
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    scriptInput.value = data.text;
+                    parseScript();
+                } else {
+                    alert(data.error);
+                }
+            } catch (e) {
+                alert('上传失败');
+            }
+        }
+        
+        // Load sample
+        document.getElementById('load-sample').addEventListener('click', () => {
+            scriptInput.value = `发言人1 大家好，欢迎收听本期播客！今天我们要聊一个非常有意思的话题——人工智能正在如何改变我们的生活。
+
+发言人2 没错，这个话题最近真的太火了。你看现在到处都在讨论AI，从ChatGPT到各种AI绘画工具，感觉一夜之间AI就无处不在了。
+
+发言人1 确实如此。我记得几年前，AI还只是科幻电影里的概念，现在却已经渗透到了我们日常生活的方方面面。
+
+发言人2 对对对，我最近就在用AI帮我写代码、整理文档，效率提升了不少。你有没有类似的体验？
+
+发言人1 当然有！我现在写文章都会先让AI帮我列个大纲，然后再自己填充内容。不过说实话，我觉得AI目前还是个很好的助手，但完全取代人类的创造力，我觉得还早。
+
+发言人2 这点我同意。AI擅长的是处理大量信息、找规律，但真正的创新和情感共鸣，还是需要人来把握。
+
+发言人1 好的，那我们今天就先聊到这里。感谢大家的收听，我们下期再见！`;
+            parseScript();
+        });
+        
+        // Generate
+        generateBtn.addEventListener('click', async () => {
+            const text = scriptInput.value;
+            if (!text.trim()) {
+                alert('请先输入脚本内容');
+                return;
+            }
+            
+            generateBtn.disabled = true;
+            progressContainer.classList.add('active');
+            audioSection.classList.remove('active');
+            progressFill.style.width = '0%';
+            progressText.textContent = '准备中...';
+            
+            const settings = {
+                host_seed: parseInt(document.getElementById('host-seed').value),
+                host_speed: parseInt(document.getElementById('host-speed').value),
+                host_emotion: parseInt(document.getElementById('host-emotion').value),
+                guest_seed: parseInt(document.getElementById('guest-seed').value),
+                guest_speed: parseInt(document.getElementById('guest-speed').value),
+                guest_emotion: parseInt(document.getElementById('guest-emotion').value),
+            };
+            
+            try {
+                const res = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, settings })
+                });
+                
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.error);
+                    generateBtn.disabled = false;
+                    progressContainer.classList.remove('active');
+                    return;
+                }
+                
+                // Poll progress
+                pollProgress();
+                
+            } catch (e) {
+                alert('请求失败');
+                generateBtn.disabled = false;
+                progressContainer.classList.remove('active');
+            }
+        });
+        
+        async function pollProgress() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                
+                updateStatus(data.status, data.model_loaded);
+                
+                progressFill.style.width = (data.progress * 100) + '%';
+                
+                if (data.status === 'loading') {
+                    progressText.textContent = '加载模型中...';
+                } else if (data.status === 'generating') {
+                    progressText.textContent = `生成中 ${Math.round(data.progress * 100)}%`;
+                } else if (data.status === 'complete') {
+                    progressText.textContent = '完成！';
+                    progressFill.style.width = '100%';
+                    generateBtn.disabled = false;
+                    
+                    // Show audio
+                    setTimeout(() => {
+                        audioSection.classList.add('active');
+                        audioPlayer.src = '/api/audio?' + Date.now();
+                        audioPlayer.load();
+                    }, 500);
+                    
+                    return;
+                } else if (data.status === 'error') {
+                    progressText.textContent = '生成失败';
+                    generateBtn.disabled = false;
+                    return;
+                }
+                
+                if (data.is_generating || data.status === 'loading') {
+                    setTimeout(pollProgress, 500);
+                } else {
+                    generateBtn.disabled = false;
+                }
+                
+            } catch (e) {
+                console.error(e);
+                setTimeout(pollProgress, 1000);
+            }
+        }
+        
+        function updateStatus(status, modelLoaded) {
+            statusDot.className = 'status-dot';
+            
+            if (status === 'loading') {
+                statusDot.classList.add('loading');
+                statusText.textContent = '加载中';
+            } else if (status === 'generating') {
+                statusDot.classList.add('loading');
+                statusText.textContent = '生成中';
+            } else if (status === 'complete' || (status === 'ready' && modelLoaded)) {
+                statusDot.classList.add('ready');
+                statusText.textContent = '就绪';
+            } else if (status === 'error') {
+                statusDot.classList.add('error');
+                statusText.textContent = '错误';
+            } else {
+                statusText.textContent = '未加载';
+            }
+        }
+        
+        // Initial parse
+        parseScript();
+    </script>
+</body>
+</html>
+

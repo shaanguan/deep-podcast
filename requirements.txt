@@ -23,6 +23,6 @@ cn2an
 python-docx           # 解析 Word 文档
 
 # Web UI
-gradio==4.36.0
-pydantic>=2.0,<2.10
+flask>=3.0.0
+flask-cors>=4.0.0
 
