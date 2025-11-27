@@ -299,49 +299,117 @@
             font-size: 12px;
         }
         
-        /* 性别选择器 */
-        .gender-selector {
-            display: flex;
-            gap: 2px;
+        /* 声纹选择器 */
+        .voice-select-group {
+            margin-bottom: 12px;
         }
         
-        .gender-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4px 8px;
-            border: 1px solid var(--border-2);
-            background: transparent;
-            color: var(--text-ui-muted);
+        .field-label {
+            display: block;
             font-size: 11px;
-            cursor: pointer;
-            transition: all 0.15s;
+            color: var(--text-ui-muted);
+            margin-bottom: 6px;
         }
         
-        .gender-btn:first-child {
-            border-radius: 4px 0 0 4px;
-        }
-        
-        .gender-btn:last-child {
-            border-radius: 0 4px 4px 0;
-            border-left: none;
-        }
-        
-        .gender-btn svg {
-            width: 12px;
-            height: 12px;
-            margin-right: 4px;
-        }
-        
-        .gender-btn.active {
-            background: var(--bg-4);
+        .voice-select {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-3);
+            border: 1px solid var(--border-2);
+            border-radius: 6px;
             color: var(--text-heading);
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+        
+        .voice-select:hover {
             border-color: var(--text-ui-muted);
         }
         
-        .gender-btn:hover:not(.active) {
+        .voice-select:focus {
+            border-color: var(--accent);
+        }
+        
+        .voice-select option {
+            background: var(--bg-2);
+            color: var(--text-heading);
+            padding: 8px;
+        }
+        
+        /* 自定义种子输入 */
+        .custom-seed-group {
+            display: none;
+            margin-bottom: 12px;
+        }
+        
+        .custom-seed-group.active {
+            display: block;
+        }
+        
+        .seed-input {
+            width: 100%;
+            padding: 8px 12px;
             background: var(--bg-3);
-            color: var(--text-ui);
+            border: 1px solid var(--border-2);
+            border-radius: 6px;
+            color: var(--text-heading);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            outline: none;
+        }
+        
+        .seed-input:focus {
+            border-color: var(--accent);
+        }
+        
+        /* 参数组 */
+        .params-group {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .param-item {
+            display: grid;
+            grid-template-columns: 60px 1fr 30px;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .param-label {
+            font-size: 11px;
+            color: var(--text-ui-muted);
+        }
+        
+        .param-item input[type="range"] {
+            width: 100%;
+            height: 3px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg-4);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .param-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+        
+        .param-value {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--text-value);
+            text-align: right;
         }
         
         /* 角色颜色 */
@@ -819,19 +887,21 @@
         
         // 角色数据存储
         let rolesData = {};
-        // 预设声纹：基于 ChatTTS 实际测试，这些种子偏男声/女声
-        const maleSeeds = [3333, 5674, 7821, 2456, 1111, 2222, 6666, 8888];
-        const femaleSeeds = [1234, 4567, 8901, 3210, 5555, 7777, 9999, 4444];
-        const defaultSeeds = { male: maleSeeds, female: femaleSeeds };
         const roleColors = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
         
-        // 根据声纹判断性别（简单规则：检查是否在预设列表中，否则用阈值）
-        function detectGender(seed) {
-            if (maleSeeds.includes(seed)) return 'male';
-            if (femaleSeeds.includes(seed)) return 'female';
-            // 默认规则：seed 的某些特征判断（这里用简单的奇偶+范围）
-            // 实际上 ChatTTS 的 seed 与性别无直接关系，这只是 UI 提示
-            return seed % 2 === 0 ? 'male' : 'female';
+        // 预设声纹
+        const voicePresets = [
+            { value: 3333, label: '👩 知性女声', desc: '清晰专业，适合主持人', gender: 'female' },
+            { value: 2, label: '👩 年轻女声', desc: '甜美活泼，适合轻松话题', gender: 'female' },
+            { value: 8080, label: '👩 成熟女声', desc: '有磁性，适合讲故事', gender: 'female' },
+            { value: 2222, label: '👨 通用男声', desc: '中气十足，适合嘉宾', gender: 'male' },
+            { value: 5674, label: '👨 青年男声', desc: '像科技博主', gender: 'male' },
+            { value: 6666, label: '👨 深沉男声', desc: '播音腔，适合旁白', gender: 'male' },
+            { value: 'custom', label: '🎛️ 自定义', desc: '手动输入种子', gender: null },
+        ];
+        
+        function getPresetBySeed(seed) {
+            return voicePresets.find(p => p.value === seed) || voicePresets.find(p => p.value === 'custom');
         }
         
         let parseTimeout;
@@ -877,17 +947,19 @@
                 return;
             }
             
-            // 初始化角色数据（保留已有配置）
+            // 初始化角色数据
             speakers.forEach((id, idx) => {
                 if (!rolesData[id]) {
-                    // 第一个角色默认男声，第二个女声，依次交替
-                    const isMale = idx % 2 === 0;
-                    const seed = isMale ? maleSeeds[idx % maleSeeds.length] : femaleSeeds[idx % femaleSeeds.length];
+                    // 交替分配预设声纹
+                    const preset = idx % 2 === 0 ? voicePresets[0] : voicePresets[3]; // 知性女声 / 通用男声
                     rolesData[id] = {
-                        gender: isMale ? 'male' : 'female',
-                        seed: seed,
+                        preset: preset.value,
+                        seed: preset.value,
                         speed: 5,
-                        emotion: 4
+                        oral: 2,
+                        laugh: 0,
+                        break_: 4,
+                        temperature: 0.3
                     };
                 }
             });
@@ -895,6 +967,9 @@
             container.innerHTML = speakers.map((id, idx) => {
                 const role = rolesData[id];
                 const colorClass = roleColors[idx % roleColors.length];
+                const currentPreset = getPresetBySeed(role.seed);
+                const isCustom = currentPreset.value === 'custom';
+                
                 return `
                     <div class="role-section" data-role-id="${id}">
                         <div class="role-header">
@@ -902,41 +977,55 @@
                                 <div class="role-indicator ${colorClass}"></div>
                                 <span class="role-label">发言人 ${id}</span>
                             </div>
-                            <div class="gender-selector">
-                                <button class="gender-btn ${role.gender === 'male' ? 'active' : ''}" 
-                                        onclick="setGender('${id}', 'male')">男</button>
-                                <button class="gender-btn ${role.gender === 'female' ? 'active' : ''}" 
-                                        onclick="setGender('${id}', 'female')">女</button>
-                            </div>
                         </div>
                         
-                        <div class="slider-group">
-                            <div class="slider-item">
-                                <span class="slider-label">声纹</span>
-                                <div class="slider-track">
-                                    <input type="range" min="1" max="9999" value="${role.seed}"
-                                           onchange="updateRole('${id}', 'seed', this.value)"
-                                           oninput="this.nextElementSibling.textContent = this.value">
-                                    <span class="slider-value">${role.seed}</span>
-                                </div>
+                        <div class="voice-select-group">
+                            <label class="field-label">声纹预设</label>
+                            <select class="voice-select" onchange="selectPreset('${id}', this.value)">
+                                ${voicePresets.map(p => `
+                                    <option value="${p.value}" ${role.seed === p.value || (isCustom && p.value === 'custom') ? 'selected' : ''}>
+                                        ${p.label} - ${p.desc}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        
+                        <div class="custom-seed-group ${isCustom ? 'active' : ''}" id="custom-seed-${id}">
+                            <label class="field-label">自定义种子</label>
+                            <input type="number" class="seed-input" min="1" max="9999" value="${role.seed}"
+                                   onchange="updateSeed('${id}', this.value)">
+                        </div>
+                        
+                        <div class="params-group">
+                            <div class="param-item">
+                                <span class="param-label">语速</span>
+                                <input type="range" min="1" max="9" value="${role.speed}"
+                                       oninput="updateRole('${id}', 'speed', this.value); this.nextElementSibling.textContent = this.value">
+                                <span class="param-value">${role.speed}</span>
                             </div>
-                            <div class="slider-item">
-                                <span class="slider-label">语速</span>
-                                <div class="slider-track">
-                                    <input type="range" min="1" max="9" value="${role.speed}"
-                                           onchange="updateRole('${id}', 'speed', this.value)"
-                                           oninput="this.nextElementSibling.textContent = this.value">
-                                    <span class="slider-value">${role.speed}</span>
-                                </div>
+                            <div class="param-item">
+                                <span class="param-label">口语化</span>
+                                <input type="range" min="0" max="9" value="${role.oral}"
+                                       oninput="updateRole('${id}', 'oral', this.value); this.nextElementSibling.textContent = this.value">
+                                <span class="param-value">${role.oral}</span>
                             </div>
-                            <div class="slider-item">
-                                <span class="slider-label">情感</span>
-                                <div class="slider-track">
-                                    <input type="range" min="0" max="9" value="${role.emotion}"
-                                           onchange="updateRole('${id}', 'emotion', this.value)"
-                                           oninput="this.nextElementSibling.textContent = this.value">
-                                    <span class="slider-value">${role.emotion}</span>
-                                </div>
+                            <div class="param-item">
+                                <span class="param-label">笑声</span>
+                                <input type="range" min="0" max="9" value="${role.laugh}"
+                                       oninput="updateRole('${id}', 'laugh', this.value); this.nextElementSibling.textContent = this.value">
+                                <span class="param-value">${role.laugh}</span>
+                            </div>
+                            <div class="param-item">
+                                <span class="param-label">停顿</span>
+                                <input type="range" min="0" max="9" value="${role.break_}"
+                                       oninput="updateRole('${id}', 'break_', this.value); this.nextElementSibling.textContent = this.value">
+                                <span class="param-value">${role.break_}</span>
+                            </div>
+                            <div class="param-item">
+                                <span class="param-label">随机性</span>
+                                <input type="range" min="0" max="10" value="${role.temperature * 10}"
+                                       oninput="updateRole('${id}', 'temperature', this.value / 10); this.nextElementSibling.textContent = (this.value / 10).toFixed(1)">
+                                <span class="param-value">${role.temperature.toFixed(1)}</span>
                             </div>
                         </div>
                     </div>
@@ -944,36 +1033,33 @@
             }).join('');
         }
         
-        function setGender(roleId, gender) {
-            rolesData[roleId].gender = gender;
-            // 切换性别时更换默认声纹
-            const idx = Object.keys(rolesData).indexOf(roleId);
-            rolesData[roleId].seed = gender === 'male' 
-                ? defaultSeeds.male[idx % 4] 
-                : defaultSeeds.female[idx % 4];
-            // 重新渲染
-            renderRoles(Object.keys(rolesData));
+        function selectPreset(roleId, value) {
+            if (value === 'custom') {
+                document.getElementById(`custom-seed-${roleId}`).classList.add('active');
+            } else {
+                const seed = parseInt(value);
+                rolesData[roleId].seed = seed;
+                rolesData[roleId].preset = seed;
+                document.getElementById(`custom-seed-${roleId}`).classList.remove('active');
+            }
+        }
+        
+        function updateSeed(roleId, value) {
+            rolesData[roleId].seed = parseInt(value);
+            rolesData[roleId].preset = 'custom';
+            // 更新下拉为自定义
+            const section = document.querySelector(`[data-role-id="${roleId}"]`);
+            if (section) {
+                const select = section.querySelector('.voice-select');
+                select.value = 'custom';
+            }
         }
         
         function updateRole(roleId, field, value) {
-            rolesData[roleId][field] = parseInt(value);
-            
-            // 声纹变化时联动性别
-            if (field === 'seed') {
-                const newGender = detectGender(parseInt(value));
-                if (rolesData[roleId].gender !== newGender) {
-                    rolesData[roleId].gender = newGender;
-                    // 更新性别按钮状态
-                    const section = document.querySelector(`[data-role-id="${roleId}"]`);
-                    if (section) {
-                        const btns = section.querySelectorAll('.gender-btn');
-                        btns.forEach(btn => {
-                            btn.classList.remove('active');
-                            if (btn.textContent === '男' && newGender === 'male') btn.classList.add('active');
-                            if (btn.textContent === '女' && newGender === 'female') btn.classList.add('active');
-                        });
-                    }
-                }
+            if (field === 'temperature') {
+                rolesData[roleId][field] = parseFloat(value);
+            } else {
+                rolesData[roleId][field] = parseInt(value);
             }
         }
         
@@ -1072,8 +1158,10 @@
                 roles[id] = {
                     seed: data.seed,
                     speed: data.speed,
-                    emotion: data.emotion,
-                    gender: data.gender
+                    oral: data.oral,
+                    laugh: data.laugh,
+                    break_: data.break_,
+                    temperature: data.temperature
                 };
             });
             

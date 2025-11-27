@@ -222,22 +222,25 @@ def api_generate():
             for role_id, role_data in roles_config.items():
                 seed = role_data.get('seed', 3333)
                 speed = role_data.get('speed', 5)
-                emotion = role_data.get('emotion', 4)
-                gender = role_data.get('gender', 'male')
+                oral = role_data.get('oral', 2)
+                laugh = role_data.get('laugh', 0)
+                break_ = role_data.get('break_', 4)
+                temperature = role_data.get('temperature', 0.3)
                 
                 new_roles[role_id] = {
                     "seed": seed,
                     "prompt": f"[speed_{speed}]",
                     "desc": f"角色{role_id}",
-                    "gender": gender,
+                    "temperature": temperature,
                     "refine_override": {
-                        "oral": min(emotion, 5),
-                        "laugh": max(0, emotion - 5),
-                        "break": 3 if gender == 'male' else 4
+                        "oral": oral,
+                        "laugh": laugh,
+                        "break": break_
                     }
                 }
             
             APP_STATE.config['roles'] = new_roles
+            APP_STATE.config['style']['temperature'] = temperature  # 使用第一个角色的temperature作为全局
             
             APP_STATE.role_manager = RoleManager(APP_STATE.config)
             APP_STATE.generator.role_manager = APP_STATE.role_manager
