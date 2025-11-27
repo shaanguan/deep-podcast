@@ -44,7 +44,7 @@ audio:
   sample_rate: 24000      # 采样率
   pause_duration: 0.75    # 稍长的停顿，留白
   normalize: true         # 是否归一化响度
-  use_room_tone: true     # 使用底噪代替静音
+  use_room_tone: false    # 关闭底噪，使用纯静音
   room_tone_volume: 0.01  # 底噪音量
   crossfade_ms: 80        # 顺滑拼接
 
