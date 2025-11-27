@@ -1022,36 +1022,30 @@
             } else {
                 let seed = parseInt(value);
                 
-                // 检查是否与其他角色冲突
+                // 检查是否与其他角色冲突，自动偏移冲突的角色
                 const conflictRole = isSeedUsedByOthers(roleId, seed);
                 if (conflictRole) {
-                    seed = findUnusedSeed(seed, roleId);
-                    alert(`该音色已被发言人 ${conflictRole} 使用，已自动调整为 ${seed}`);
+                    // 偏移另一个角色的 seed
+                    const newSeedForOther = findUnusedSeed(rolesData[conflictRole].seed + 100, conflictRole);
+                    rolesData[conflictRole].seed = newSeedForOther;
+                    updateRoleUI(conflictRole);
                 }
                 
                 rolesData[roleId].seed = seed;
-                // 更新滑块和显示值
-                const slider = document.getElementById(`seed-slider-${roleId}`);
-                const valueDisplay = document.getElementById(`seed-value-${roleId}`);
-                if (slider) slider.value = seed;
-                if (valueDisplay) valueDisplay.textContent = seed;
-                
-                // 更新下拉显示
-                const select = document.getElementById(`preset-${roleId}`);
-                const matchedPreset = voicePresets.find(p => p.value === seed);
-                select.value = matchedPreset ? seed : 'custom';
+                updateRoleUI(roleId);
             }
         }
         
         function updateSeedSlider(roleId, value) {
             let seed = parseInt(value);
             
-            // 检查是否与其他角色冲突
+            // 检查是否与其他角色冲突，自动偏移冲突的角色
             const conflictRole = isSeedUsedByOthers(roleId, seed);
             if (conflictRole) {
-                seed = findUnusedSeed(seed, roleId);
-                // 更新滑块位置
-                document.getElementById(`seed-slider-${roleId}`).value = seed;
+                // 偏移另一个角色的 seed
+                const newSeedForOther = findUnusedSeed(rolesData[conflictRole].seed + 100, conflictRole);
+                rolesData[conflictRole].seed = newSeedForOther;
+                updateRoleUI(conflictRole);
             }
             
             rolesData[roleId].seed = seed;
@@ -1067,6 +1061,21 @@
             } else {
                 select.value = 'custom';
             }
+        }
+        
+        // 更新角色 UI 显示
+        function updateRoleUI(roleId) {
+            const seed = rolesData[roleId].seed;
+            const slider = document.getElementById(`seed-slider-${roleId}`);
+            const valueDisplay = document.getElementById(`seed-value-${roleId}`);
+            const select = document.getElementById(`preset-${roleId}`);
+            
+            if (slider) slider.value = seed;
+            if (valueDisplay) valueDisplay.textContent = seed;
+            
+            // 更新下拉显示
+            const matchedPreset = voicePresets.find(p => p.value === seed);
+            if (select) select.value = matchedPreset ? seed : 'custom';
         }
         
         function updateRole(roleId, field, value) {
