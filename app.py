@@ -266,18 +266,22 @@ def api_generate():
             
             # 生成音频
             total = APP_STATE.total_segments
-            APP_STATE.current_segment = 0
+            
+            # 记录开始时已有的文件数（用于断点续传模式）
+            temp_dir_path = PROJECT_ROOT / "temp"
+            initial_count = len(list(temp_dir_path.glob("*.wav"))) if temp_dir_path.exists() else 0
+            APP_STATE.current_segment = initial_count
             
             # 监控进度：10%（模型已加载）-> 95%（生成完成）-> 100%（合并完成）
             def monitor_progress():
                 while APP_STATE.is_generating:
-                    temp_dir = PROJECT_ROOT / "temp"
-                    if temp_dir.exists():
-                        done = len(list(temp_dir.glob("*.wav")))
-                        APP_STATE.current_segment = done
+                    if temp_dir_path.exists():
+                        current_count = len(list(temp_dir_path.glob("*.wav")))
+                        APP_STATE.current_segment = current_count
                         if total > 0:
-                            # 10% + 85% * (完成数/总数)
-                            APP_STATE.progress = 0.1 + (done / total) * 0.85
+                            # 进度 = 10% + 85% * (完成数/总数)
+                            progress = 0.1 + (current_count / total) * 0.85
+                            APP_STATE.progress = min(progress, 0.95)
                     time.sleep(0.3)
             
             monitor_thread = threading.Thread(target=monitor_progress)
