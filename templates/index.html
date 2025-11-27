@@ -299,32 +299,20 @@
             font-size: 12px;
         }
         
-        /* 声纹选择器 */
-        .voice-select-group {
-            margin-bottom: 12px;
-        }
-        
-        .field-label {
-            display: block;
-            font-size: 11px;
-            color: var(--text-ui-muted);
-            margin-bottom: 6px;
-        }
-        
+        /* 声纹选择器 - 放在标题右侧 */
         .voice-select {
-            width: 100%;
-            padding: 8px 12px;
+            padding: 4px 24px 4px 8px;
             background: var(--bg-3);
             border: 1px solid var(--border-2);
-            border-radius: 6px;
-            color: var(--text-heading);
-            font-size: 12px;
+            border-radius: 4px;
+            color: var(--text-ui);
+            font-size: 11px;
             cursor: pointer;
             outline: none;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 10px center;
+            background-position: right 6px center;
         }
         
         .voice-select:hover {
@@ -338,33 +326,6 @@
         .voice-select option {
             background: var(--bg-2);
             color: var(--text-heading);
-            padding: 8px;
-        }
-        
-        /* 自定义种子输入 */
-        .custom-seed-group {
-            display: none;
-            margin-bottom: 12px;
-        }
-        
-        .custom-seed-group.active {
-            display: block;
-        }
-        
-        .seed-input {
-            width: 100%;
-            padding: 8px 12px;
-            background: var(--bg-3);
-            border: 1px solid var(--border-2);
-            border-radius: 6px;
-            color: var(--text-heading);
-            font-family: var(--font-mono);
-            font-size: 12px;
-            outline: none;
-        }
-        
-        .seed-input:focus {
-            border-color: var(--accent);
         }
         
         /* 参数组 */
@@ -891,13 +852,13 @@
         
         // 预设声纹
         const voicePresets = [
-            { value: 3333, label: '👩 知性女声', desc: '清晰专业，适合主持人', gender: 'female' },
-            { value: 2, label: '👩 年轻女声', desc: '甜美活泼，适合轻松话题', gender: 'female' },
-            { value: 8080, label: '👩 成熟女声', desc: '有磁性，适合讲故事', gender: 'female' },
-            { value: 2222, label: '👨 通用男声', desc: '中气十足，适合嘉宾', gender: 'male' },
-            { value: 5674, label: '👨 青年男声', desc: '像科技博主', gender: 'male' },
-            { value: 6666, label: '👨 深沉男声', desc: '播音腔，适合旁白', gender: 'male' },
-            { value: 'custom', label: '🎛️ 自定义', desc: '手动输入种子', gender: null },
+            { value: 3333, label: '知性女声' },
+            { value: 2, label: '年轻女声' },
+            { value: 8080, label: '成熟女声' },
+            { value: 2222, label: '通用男声' },
+            { value: 5674, label: '青年男声' },
+            { value: 6666, label: '深沉男声' },
+            { value: 'custom', label: '自定义' },
         ];
         
         function getPresetBySeed(seed) {
@@ -977,26 +938,22 @@
                                 <div class="role-indicator ${colorClass}"></div>
                                 <span class="role-label">发言人 ${id}</span>
                             </div>
-                        </div>
-                        
-                        <div class="voice-select-group">
-                            <label class="field-label">声纹预设</label>
-                            <select class="voice-select" onchange="selectPreset('${id}', this.value)">
+                            <select class="voice-select" id="preset-${id}" onchange="selectPreset('${id}', this.value)">
                                 ${voicePresets.map(p => `
                                     <option value="${p.value}" ${role.seed === p.value || (isCustom && p.value === 'custom') ? 'selected' : ''}>
-                                        ${p.label} - ${p.desc}
+                                        ${p.label}
                                     </option>
                                 `).join('')}
                             </select>
                         </div>
                         
-                        <div class="custom-seed-group ${isCustom ? 'active' : ''}" id="custom-seed-${id}">
-                            <label class="field-label">自定义种子</label>
-                            <input type="number" class="seed-input" min="1" max="9999" value="${role.seed}"
-                                   onchange="updateSeed('${id}', this.value)">
-                        </div>
-                        
                         <div class="params-group">
+                            <div class="param-item">
+                                <span class="param-label">音色</span>
+                                <input type="range" min="1" max="9999" value="${role.seed}" id="seed-slider-${id}"
+                                       oninput="updateSeedSlider('${id}', this.value)">
+                                <span class="param-value" id="seed-value-${id}">${role.seed}</span>
+                            </div>
                             <div class="param-item">
                                 <span class="param-label">语速</span>
                                 <input type="range" min="1" max="9" value="${role.speed}"
@@ -1035,22 +992,31 @@
         
         function selectPreset(roleId, value) {
             if (value === 'custom') {
-                document.getElementById(`custom-seed-${roleId}`).classList.add('active');
+                // 保持当前 seed 不变
             } else {
                 const seed = parseInt(value);
                 rolesData[roleId].seed = seed;
-                rolesData[roleId].preset = seed;
-                document.getElementById(`custom-seed-${roleId}`).classList.remove('active');
+                // 更新滑块和显示值
+                const slider = document.getElementById(`seed-slider-${roleId}`);
+                const valueDisplay = document.getElementById(`seed-value-${roleId}`);
+                if (slider) slider.value = seed;
+                if (valueDisplay) valueDisplay.textContent = seed;
             }
         }
         
-        function updateSeed(roleId, value) {
-            rolesData[roleId].seed = parseInt(value);
-            rolesData[roleId].preset = 'custom';
-            // 更新下拉为自定义
-            const section = document.querySelector(`[data-role-id="${roleId}"]`);
-            if (section) {
-                const select = section.querySelector('.voice-select');
+        function updateSeedSlider(roleId, value) {
+            const seed = parseInt(value);
+            rolesData[roleId].seed = seed;
+            
+            // 更新显示值
+            document.getElementById(`seed-value-${roleId}`).textContent = seed;
+            
+            // 检查是否匹配预设
+            const preset = voicePresets.find(p => p.value === seed);
+            const select = document.getElementById(`preset-${roleId}`);
+            if (preset && preset.value !== 'custom') {
+                select.value = seed;
+            } else {
                 select.value = 'custom';
             }
         }
