@@ -274,6 +274,85 @@
             color: var(--text-content);
         }
         
+        /* 角色空状态 */
+        .roles-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: var(--text-ui-muted);
+            text-align: center;
+            background: var(--bg-2);
+            border: 1px dashed var(--border-2);
+            border-radius: 10px;
+        }
+        
+        .roles-empty svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        
+        .roles-empty span {
+            font-size: 12px;
+        }
+        
+        /* 性别选择器 */
+        .gender-selector {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-3);
+            border-radius: 6px;
+            padding: 2px;
+        }
+        
+        .gender-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-ui-muted);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .gender-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+        
+        .gender-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .gender-btn.male.active {
+            background: #3b82f6;
+        }
+        
+        .gender-btn.female.active {
+            background: #ec4899;
+        }
+        
+        .gender-btn:hover:not(.active) {
+            background: var(--bg-4);
+            color: var(--text-ui);
+        }
+        
+        /* 角色颜色 */
+        .role-indicator.c1 { background: #ec4899; }
+        .role-indicator.c2 { background: #3b82f6; }
+        .role-indicator.c3 { background: #22c55e; }
+        .role-indicator.c4 { background: #f59e0b; }
+        .role-indicator.c5 { background: #8b5cf6; }
+        .role-indicator.c6 { background: #06b6d4; }
+        
         /* Slider Group - 格式塔设计 */
         .slider-group {
             display: grid;
@@ -297,10 +376,11 @@
             height: 24px;
             display: flex;
             align-items: center;
+            gap: 10px;
         }
         
         .slider-track input {
-            width: 100%;
+            flex: 1;
             height: 3px;
             -webkit-appearance: none;
             appearance: none;
@@ -394,83 +474,173 @@
         .progress-section {
             margin-top: 12px;
             display: none;
+            background: var(--bg-2);
+            border: 1px solid var(--border-1);
+            border-radius: 10px;
+            padding: 16px;
         }
         
         .progress-section.active { display: block; }
         
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .progress-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-heading);
+        }
+        
+        .progress-status svg {
+            width: 14px;
+            height: 14px;
+            color: var(--accent);
+        }
+        
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .progress-percent {
+            font-size: 13px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
         .progress-bar {
-            height: 2px;
+            height: 4px;
             background: var(--bg-4);
-            border-radius: 1px;
+            border-radius: 2px;
             overflow: hidden;
         }
         
         .progress-fill {
             height: 100%;
-            background: var(--accent);
-            transition: width 0.3s;
+            background: linear-gradient(90deg, var(--accent), #a855f7);
+            border-radius: 2px;
+            transition: width 0.3s ease;
         }
         
-        .progress-text {
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
             font-size: 11px;
             color: var(--text-ui-muted);
-            text-align: center;
-            margin-top: 8px;
         }
         
-        /* Audio */
-        .audio-section {
+        #progress-time {
+            font-family: var(--font-mono);
+        }
+        
+        /* Result */
+        .result-section {
             margin-top: 12px;
             display: none;
+            background: var(--bg-2);
+            border: 1px solid var(--border-1);
+            border-radius: 10px;
+            padding: 16px;
         }
         
-        .audio-section.active { display: block; }
+        .result-section.active { display: block; }
+        
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #22c55e;
+        }
+        
+        .result-icon {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .result-stat {
+            text-align: center;
+            padding: 10px;
+            background: var(--bg-3);
+            border-radius: 8px;
+        }
+        
+        .result-stat-label {
+            display: block;
+            font-size: 10px;
+            color: var(--text-ui-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .result-stat-value {
+            font-size: 14px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--text-heading);
+        }
         
         .audio-card {
-            background: var(--bg-2);
+            background: var(--bg-3);
             border: 1px solid var(--border-1);
             border-radius: 8px;
             padding: 12px;
+            margin-bottom: 12px;
         }
         
         .audio-card audio {
             width: 100%;
-            height: 32px;
+            height: 36px;
         }
         
-        .audio-footer {
+        .result-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
+            gap: 10px;
         }
         
-        .audio-duration {
-            font-size: 11px;
-            font-family: var(--font-mono);
-            color: var(--text-ui-muted);
-        }
-        
-        .btn-download {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 5px 10px;
-            font-size: 11px;
-            color: var(--text-ui-muted);
-            background: var(--bg-3);
-            border: 1px solid var(--border-2);
-            border-radius: 5px;
+        .btn-download-large {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
             text-decoration: none;
-            transition: all 0.15s;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
         }
         
-        .btn-download:hover {
-            background: var(--bg-4);
-            color: var(--text-ui);
+        .btn-download-large:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
         }
         
-        .btn-download svg { width: 11px; height: 11px; }
+        .btn-download-large svg {
+            width: 14px;
+            height: 14px;
+        }
         
         #file-input { display: none; }
         
@@ -525,7 +695,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <span class="section-title" style="margin-bottom: 0;">
                     <i data-lucide="file-text"></i>
-                    脚本
+                    剧本
                 </span>
                 <button class="btn btn-ghost" id="load-sample">
                     <i data-lucide="file-plus"></i>
@@ -566,104 +736,78 @@
         
         <div class="panel panel-right">
             <span class="section-title">
-                <i data-lucide="sliders-horizontal"></i>
-                配置
+                <i data-lucide="users"></i>
+                角色配置
             </span>
             
-            <!-- Host -->
-            <div class="role-section">
-                <div class="role-header">
-                    <div class="role-name">
-                        <div class="role-indicator host"></div>
-                        <span class="role-label">主持人</span>
-                    </div>
-                    <span class="role-id">发言人 1</span>
-                </div>
-                
-                <div class="slider-group">
-                    <div class="slider-item">
-                        <span class="slider-label">声纹</span>
-                        <div class="slider-track">
-                            <input type="range" id="host-seed" min="1" max="9999" value="3333">
-                        </div>
-                        <span class="slider-value" id="host-seed-value">3333</span>
-                    </div>
-                    <div class="slider-item">
-                        <span class="slider-label">语速</span>
-                        <div class="slider-track">
-                            <input type="range" id="host-speed" min="1" max="9" value="5">
-                        </div>
-                        <span class="slider-value" id="host-speed-value">5</span>
-                    </div>
-                    <div class="slider-item">
-                        <span class="slider-label">情感</span>
-                        <div class="slider-track">
-                            <input type="range" id="host-emotion" min="0" max="9" value="3">
-                        </div>
-                        <span class="slider-value" id="host-emotion-value">3</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Guest -->
-            <div class="role-section">
-                <div class="role-header">
-                    <div class="role-name">
-                        <div class="role-indicator guest"></div>
-                        <span class="role-label">嘉宾</span>
-                    </div>
-                    <span class="role-id">发言人 2</span>
-                </div>
-                
-                <div class="slider-group">
-                    <div class="slider-item">
-                        <span class="slider-label">声纹</span>
-                        <div class="slider-track">
-                            <input type="range" id="guest-seed" min="1" max="9999" value="5674">
-                        </div>
-                        <span class="slider-value" id="guest-seed-value">5674</span>
-                    </div>
-                    <div class="slider-item">
-                        <span class="slider-label">语速</span>
-                        <div class="slider-track">
-                            <input type="range" id="guest-speed" min="1" max="9" value="5">
-                        </div>
-                        <span class="slider-value" id="guest-speed-value">5</span>
-                    </div>
-                    <div class="slider-item">
-                        <span class="slider-label">情感</span>
-                        <div class="slider-track">
-                            <input type="range" id="guest-emotion" min="0" max="9" value="5">
-                        </div>
-                        <span class="slider-value" id="guest-emotion-value">5</span>
-                    </div>
+            <!-- 动态角色列表 -->
+            <div id="roles-container">
+                <div class="roles-empty">
+                    <i data-lucide="user-plus"></i>
+                    <span>请先输入剧本，角色将自动识别</span>
                 </div>
             </div>
             
             <div class="divider"></div>
             
-            <button class="btn btn-primary" id="generate-btn">
-                <i data-lucide="sparkles"></i>
-                开始生成
-            </button>
+            <!-- 生成按钮 -->
+            <div id="generate-wrapper">
+                <button class="btn btn-primary" id="generate-btn">
+                    <i data-lucide="sparkles"></i>
+                    开始生成
+                </button>
+            </div>
             
+            <!-- 进度区域 -->
             <div class="progress-section" id="progress-section">
+                <div class="progress-header">
+                    <span class="progress-status" id="progress-status">
+                        <i data-lucide="loader-2" class="spin"></i>
+                        准备中
+                    </span>
+                    <span class="progress-percent" id="progress-percent">0%</span>
+                </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
                 </div>
-                <div class="progress-text" id="progress-text">准备中...</div>
+                <div class="progress-info">
+                    <span id="progress-detail">正在初始化...</span>
+                    <span id="progress-time">已用时 0:00</span>
+                </div>
             </div>
             
-            <div class="audio-section" id="audio-section">
+            <!-- 结果区域 -->
+            <div class="result-section" id="result-section">
+                <div class="result-header">
+                    <i data-lucide="check-circle-2" class="result-icon"></i>
+                    <span>生成完成</span>
+                </div>
+                <div class="result-stats">
+                    <div class="result-stat">
+                        <span class="result-stat-label">音频时长</span>
+                        <span class="result-stat-value" id="result-duration">--:--</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="result-stat-label">生成用时</span>
+                        <span class="result-stat-value" id="result-time">--:--</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="result-stat-label">处理段落</span>
+                        <span class="result-stat-value" id="result-segments">0</span>
+                    </div>
+                </div>
                 <div class="audio-card">
                     <audio controls id="audio-player"></audio>
-                    <div class="audio-footer">
-                        <span class="audio-duration" id="audio-duration">--:--</span>
-                        <a href="/api/audio" download="podcast.wav" class="btn-download">
-                            <i data-lucide="download"></i>
-                            下载
-                        </a>
-                    </div>
+                </div>
+                <div class="result-actions">
+                    <a href="/api/audio" download="podcast.wav" class="btn btn-download-large">
+                        <i data-lucide="download"></i>
+                        下载音频
+                    </a>
+                    <button class="btn btn-ghost" id="regenerate-btn">
+                        <i data-lucide="refresh-cw"></i>
+                        重新生成
+                    </button>
                 </div>
             </div>
         </div>
@@ -674,12 +818,10 @@
         
         const $ = id => document.getElementById(id);
         
-        const sliders = ['host-seed', 'host-speed', 'host-emotion', 'guest-seed', 'guest-speed', 'guest-emotion'];
-        sliders.forEach(id => {
-            $(id).addEventListener('input', e => {
-                $(id + '-value').textContent = e.target.value;
-            });
-        });
+        // 角色数据存储
+        let rolesData = {};
+        const defaultSeeds = { male: [3333, 5674, 7821, 2456], female: [1234, 4567, 8901, 3210] };
+        const roleColors = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
         
         let parseTimeout;
         $('script-input').addEventListener('input', () => {
@@ -691,6 +833,7 @@
             const text = $('script-input').value;
             if (!text.trim()) {
                 updateStats({ dialogues: 0, speakers: 0, chars: 0, duration: 0 });
+                renderRoles([]);
                 return;
             }
             try {
@@ -700,8 +843,117 @@
                     body: JSON.stringify({ text })
                 });
                 const data = await res.json();
-                if (data.success) updateStats(data.stats);
+                if (data.success) {
+                    updateStats(data.stats);
+                    // 获取角色列表
+                    const speakers = Object.keys(data.stats.speaker_details || {});
+                    renderRoles(speakers);
+                }
             } catch (e) {}
+        }
+        
+        function renderRoles(speakers) {
+            const container = $('roles-container');
+            
+            if (speakers.length === 0) {
+                container.innerHTML = `
+                    <div class="roles-empty">
+                        <i data-lucide="user-plus"></i>
+                        <span>请先输入剧本，角色将自动识别</span>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            
+            // 初始化角色数据（保留已有配置）
+            speakers.forEach((id, idx) => {
+                if (!rolesData[id]) {
+                    const isMale = idx % 2 === 0;
+                    rolesData[id] = {
+                        gender: isMale ? 'male' : 'female',
+                        seed: isMale ? defaultSeeds.male[idx % 4] : defaultSeeds.female[idx % 4],
+                        speed: 5,
+                        emotion: 4
+                    };
+                }
+            });
+            
+            container.innerHTML = speakers.map((id, idx) => {
+                const role = rolesData[id];
+                const colorClass = roleColors[idx % roleColors.length];
+                return `
+                    <div class="role-section" data-role-id="${id}">
+                        <div class="role-header">
+                            <div class="role-name">
+                                <div class="role-indicator ${colorClass}"></div>
+                                <span class="role-label">发言人 ${id}</span>
+                            </div>
+                            <div class="gender-selector">
+                                <button class="gender-btn male ${role.gender === 'male' ? 'active' : ''}" 
+                                        onclick="setGender('${id}', 'male')" title="男声">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="10" cy="14" r="5"/>
+                                        <path d="M19 5l-5.4 5.4M19 5h-5M19 5v5"/>
+                                    </svg>
+                                </button>
+                                <button class="gender-btn female ${role.gender === 'female' ? 'active' : ''}" 
+                                        onclick="setGender('${id}', 'female')" title="女声">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="8" r="5"/>
+                                        <path d="M12 13v8M9 18h6"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-item">
+                                <span class="slider-label">声纹</span>
+                                <div class="slider-track">
+                                    <input type="range" min="1" max="9999" value="${role.seed}"
+                                           onchange="updateRole('${id}', 'seed', this.value)"
+                                           oninput="this.nextElementSibling.textContent = this.value">
+                                    <span class="slider-value">${role.seed}</span>
+                                </div>
+                            </div>
+                            <div class="slider-item">
+                                <span class="slider-label">语速</span>
+                                <div class="slider-track">
+                                    <input type="range" min="1" max="9" value="${role.speed}"
+                                           onchange="updateRole('${id}', 'speed', this.value)"
+                                           oninput="this.nextElementSibling.textContent = this.value">
+                                    <span class="slider-value">${role.speed}</span>
+                                </div>
+                            </div>
+                            <div class="slider-item">
+                                <span class="slider-label">情感</span>
+                                <div class="slider-track">
+                                    <input type="range" min="0" max="9" value="${role.emotion}"
+                                           onchange="updateRole('${id}', 'emotion', this.value)"
+                                           oninput="this.nextElementSibling.textContent = this.value">
+                                    <span class="slider-value">${role.emotion}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function setGender(roleId, gender) {
+            rolesData[roleId].gender = gender;
+            // 切换性别时更换默认声纹
+            const idx = Object.keys(rolesData).indexOf(roleId);
+            rolesData[roleId].seed = gender === 'male' 
+                ? defaultSeeds.male[idx % 4] 
+                : defaultSeeds.female[idx % 4];
+            // 重新渲染
+            renderRoles(Object.keys(rolesData));
+        }
+        
+        function updateRole(roleId, field, value) {
+            rolesData[roleId][field] = parseInt(value);
         }
         
         function updateStats(s) {
@@ -753,45 +1005,104 @@
             parseScript();
         });
         
-        $('generate-btn').addEventListener('click', async () => {
+        // 生成相关变量
+        let startTime = null;
+        let timerInterval = null;
+        let totalSegments = 0;
+        
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+        
+        function startGeneration() {
             const text = $('script-input').value;
-            if (!text.trim()) return alert('请先输入脚本');
+            if (!text.trim()) return alert('请先输入剧本');
             
-            $('generate-btn').disabled = true;
+            if (Object.keys(rolesData).length === 0) {
+                return alert('请先输入剧本，等待角色识别完成');
+            }
+            
+            // 隐藏按钮，显示进度
+            $('generate-wrapper').style.display = 'none';
             $('progress-section').classList.add('active');
-            $('audio-section').classList.remove('active');
+            $('result-section').classList.remove('active');
+            
+            // 重置进度
             $('progress-fill').style.width = '0%';
-            $('progress-text').textContent = '准备中...';
+            $('progress-percent').textContent = '0%';
+            $('progress-status').innerHTML = '<i data-lucide="loader-2" class="spin"></i>准备中';
+            $('progress-detail').textContent = '正在初始化...';
+            $('progress-time').textContent = '已用时 0:00';
+            lucide.createIcons();
             
-            const settings = {
-                host_seed: +$('host-seed').value,
-                host_speed: +$('host-speed').value,
-                host_emotion: +$('host-emotion').value,
-                guest_seed: +$('guest-seed').value,
-                guest_speed: +$('guest-speed').value,
-                guest_emotion: +$('guest-emotion').value,
-            };
+            // 启动计时器
+            startTime = Date.now();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                $('progress-time').textContent = `已用时 ${formatTime(elapsed)}`;
+            }, 1000);
             
-            try {
-                const res = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, settings })
-                });
-                const data = await res.json();
+            // 构建角色配置
+            const roles = {};
+            Object.entries(rolesData).forEach(([id, data]) => {
+                roles[id] = {
+                    seed: data.seed,
+                    speed: data.speed,
+                    emotion: data.emotion,
+                    gender: data.gender
+                };
+            });
+            
+            fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, roles })
+            }).then(res => res.json()).then(data => {
                 if (!data.success) {
-                    alert(data.error);
-                    $('generate-btn').disabled = false;
-                    $('progress-section').classList.remove('active');
+                    showError(data.error);
                     return;
                 }
+                totalSegments = data.total_segments || 0;
                 pollProgress();
-            } catch (e) {
-                alert('请求失败');
-                $('generate-btn').disabled = false;
-                $('progress-section').classList.remove('active');
-            }
-        });
+            }).catch(e => {
+                showError('请求失败');
+            });
+        }
+        
+        function showError(msg) {
+            clearInterval(timerInterval);
+            alert(msg);
+            $('generate-wrapper').style.display = 'block';
+            $('progress-section').classList.remove('active');
+        }
+        
+        function showResult(data) {
+            clearInterval(timerInterval);
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            
+            // 隐藏进度，显示结果
+            $('progress-section').classList.remove('active');
+            $('result-section').classList.add('active');
+            
+            // 更新结果信息
+            $('result-time').textContent = formatTime(elapsed);
+            $('result-segments').textContent = data.total_segments || totalSegments || '-';
+            
+            // 加载音频
+            const audio = $('audio-player');
+            audio.src = '/api/audio?' + Date.now();
+            audio.load();
+            
+            // 获取音频时长
+            audio.addEventListener('loadedmetadata', () => {
+                $('result-duration').textContent = formatTime(audio.duration);
+            }, { once: true });
+            
+            lucide.createIcons();
+        }
         
         async function pollProgress() {
             try {
@@ -799,38 +1110,47 @@
                 const data = await res.json();
                 
                 updateStatus(data.status, data.model_loaded);
-                $('progress-fill').style.width = (data.progress * 100) + '%';
+                
+                const pct = Math.round(data.progress * 100);
+                $('progress-fill').style.width = pct + '%';
+                $('progress-percent').textContent = pct + '%';
                 
                 if (data.status === 'loading') {
-                    $('progress-text').textContent = '加载模型...';
+                    $('progress-status').innerHTML = '<i data-lucide="loader-2" class="spin"></i>加载模型';
+                    $('progress-detail').textContent = '首次加载可能需要几分钟...';
+                    lucide.createIcons();
                 } else if (data.status === 'generating') {
-                    $('progress-text').textContent = `生成中 ${Math.round(data.progress * 100)}%`;
+                    const current = data.current_segment || 0;
+                    const total = data.total_segments || totalSegments || '?';
+                    $('progress-status').innerHTML = '<i data-lucide="audio-waveform" class="spin"></i>生成中';
+                    $('progress-detail').textContent = `正在处理第 ${current}/${total} 段`;
+                    lucide.createIcons();
                 } else if (data.status === 'complete') {
-                    $('progress-text').textContent = '完成';
-                    $('progress-fill').style.width = '100%';
-                    $('generate-btn').disabled = false;
-                    setTimeout(() => {
-                        $('progress-section').classList.remove('active');
-                        $('audio-section').classList.add('active');
-                        $('audio-player').src = '/api/audio?' + Date.now();
-                        $('audio-player').load();
-                    }, 500);
+                    showResult(data);
                     return;
                 } else if (data.status === 'error') {
-                    $('progress-text').textContent = '失败';
-                    $('generate-btn').disabled = false;
+                    showError(data.message || '生成失败');
                     return;
                 }
                 
                 if (data.is_generating || data.status === 'loading') {
                     setTimeout(pollProgress, 500);
                 } else {
-                    $('generate-btn').disabled = false;
+                    $('generate-wrapper').style.display = 'block';
+                    $('progress-section').classList.remove('active');
+                    clearInterval(timerInterval);
                 }
             } catch (e) {
                 setTimeout(pollProgress, 1000);
             }
         }
+        
+        $('generate-btn').addEventListener('click', startGeneration);
+        $('regenerate-btn').addEventListener('click', () => {
+            $('result-section').classList.remove('active');
+            $('generate-wrapper').style.display = 'block';
+            startGeneration();
+        });
         
         function updateStatus(status, loaded) {
             $('status-dot').className = 'status-dot';

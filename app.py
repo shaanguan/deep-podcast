@@ -54,6 +54,9 @@ class AppState:
     is_generating: bool = False
     progress: float = 0.0
     status: str = "idle"
+    total_segments: int = 0
+    current_segment: int = 0
+    message: str = ""
     
 APP_STATE = AppState()
 
@@ -155,7 +158,10 @@ def get_status():
         "model_loaded": APP_STATE.model_loaded,
         "is_generating": APP_STATE.is_generating,
         "progress": APP_STATE.progress,
-        "status": APP_STATE.status
+        "status": APP_STATE.status,
+        "total_segments": APP_STATE.total_segments,
+        "current_segment": APP_STATE.current_segment,
+        "message": APP_STATE.message
     })
 
 
@@ -181,50 +187,57 @@ def api_generate():
     
     data = request.json
     text = data.get('text', '')
-    settings = data.get('settings', {})
+    roles_config = data.get('roles', {})
     
     # 解析文本
     stats, dialogues = parse_text(text)
     if stats is None:
         return jsonify({"success": False, "error": dialogues})
     
+    total_segs = len(dialogues)
+    
     APP_STATE.is_generating = True
     APP_STATE.progress = 0
     APP_STATE.status = "generating"
+    APP_STATE.total_segments = total_segs
+    APP_STATE.current_segment = 0
+    APP_STATE.message = ""
     
     def run_generation():
         global APP_STATE
         try:
             # 加载模型
+            APP_STATE.status = "loading"
             success, msg = ensure_model_loaded()
             if not success:
                 APP_STATE.status = "error"
+                APP_STATE.message = msg
                 APP_STATE.is_generating = False
                 return
             
-            # 更新配置
-            APP_STATE.config['roles'] = {
-                "1": {
-                    "seed": settings.get('host_seed', 3333),
-                    "prompt": f"[speed_{settings.get('host_speed', 5)}]",
-                    "desc": "主持人",
+            APP_STATE.status = "generating"
+            
+            # 根据前端传来的角色配置构建
+            new_roles = {}
+            for role_id, role_data in roles_config.items():
+                seed = role_data.get('seed', 3333)
+                speed = role_data.get('speed', 5)
+                emotion = role_data.get('emotion', 4)
+                gender = role_data.get('gender', 'male')
+                
+                new_roles[role_id] = {
+                    "seed": seed,
+                    "prompt": f"[speed_{speed}]",
+                    "desc": f"角色{role_id}",
+                    "gender": gender,
                     "refine_override": {
-                        "oral": min(settings.get('host_emotion', 3), 5),
-                        "laugh": max(0, settings.get('host_emotion', 3) - 5),
-                        "break": 3
-                    }
-                },
-                "2": {
-                    "seed": settings.get('guest_seed', 5674),
-                    "prompt": f"[speed_{settings.get('guest_speed', 5)}]",
-                    "desc": "嘉宾",
-                    "refine_override": {
-                        "oral": min(settings.get('guest_emotion', 5), 5),
-                        "laugh": max(0, settings.get('guest_emotion', 5) - 5),
-                        "break": 4
+                        "oral": min(emotion, 5),
+                        "laugh": max(0, emotion - 5),
+                        "break": 3 if gender == 'male' else 4
                     }
                 }
-            }
+            
+            APP_STATE.config['roles'] = new_roles
             
             APP_STATE.role_manager = RoleManager(APP_STATE.config)
             APP_STATE.generator.role_manager = APP_STATE.role_manager
@@ -232,9 +245,9 @@ def api_generate():
             output_path = str(PROJECT_ROOT / "data" / "output" / "podcast.wav")
             
             # 生成
-            APP_STATE.progress = 0.2
+            APP_STATE.progress = 0.1
             
-            total = len(dialogues)
+            total = APP_STATE.total_segments
             
             # 监控进度
             def monitor_progress():
@@ -242,8 +255,9 @@ def api_generate():
                     temp_dir = PROJECT_ROOT / "temp"
                     if temp_dir.exists():
                         done = len(list(temp_dir.glob("*.wav")))
+                        APP_STATE.current_segment = done
                         if total > 0:
-                            APP_STATE.progress = 0.2 + (done / total) * 0.7
+                            APP_STATE.progress = 0.1 + (done / total) * 0.85
                     time.sleep(0.5)
             
             monitor_thread = threading.Thread(target=monitor_progress)
@@ -258,18 +272,21 @@ def api_generate():
             
             if success and os.path.exists(output_path):
                 APP_STATE.progress = 1.0
+                APP_STATE.current_segment = total
                 APP_STATE.status = "complete"
             else:
                 APP_STATE.status = "error"
+                APP_STATE.message = "生成失败"
                 
         except Exception as e:
             APP_STATE.status = "error"
+            APP_STATE.message = str(e)
             APP_STATE.is_generating = False
     
     thread = threading.Thread(target=run_generation)
     thread.start()
     
-    return jsonify({"success": True, "message": "生成任务已启动"})
+    return jsonify({"success": True, "message": "生成任务已启动", "total_segments": total_segs})
 
 
 @app.route('/api/audio')
