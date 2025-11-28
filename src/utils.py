@@ -45,6 +45,12 @@ try:
 except ImportError:
     HAS_PYLOUDNORM = False
 
+try:
+    import scipy.signal
+    HAS_SCIPY = True
+except ImportError:
+    HAS_SCIPY = False
+
 
 # ============================================================
 # 终端输出工具
@@ -497,4 +503,62 @@ def clean_directory(directory: str, pattern: str = "*"):
             os.remove(f)
         except Exception as e:
             print_warning(f"无法删除文件 {f}: {e}")
+
+
+# ============================================================
+# 混响处理
+# ============================================================
+
+def apply_reverb(
+    audio: np.ndarray,
+    sample_rate: int = 24000,
+    room_size: float = 0.1,
+    damping: float = 0.5,
+    wet_level: float = 0.1
+) -> np.ndarray:
+    """
+    应用简单的算法混响，统一空间感
+    模拟 Schroeder 混响模型，让不同角色听起来像在同一个录音棚里
+    
+    Args:
+        audio: 音频数据
+        sample_rate: 采样率
+        room_size: 房间大小 (0.0-1.0)，越大混响时间越长
+        damping: 高频阻尼 (0.0-1.0)，越大声音越温暖
+        wet_level: 湿声比例 (0.0-1.0)，混响强度
+        
+    Returns:
+        添加混响后的音频
+    """
+    if not HAS_SCIPY or len(audio) == 0:
+        return audio
+    
+    # 生成一个简单的房间脉冲响应 (Impulse Response)
+    # 房间越大，混响时间(RT60)越长
+    rt60 = 0.1 + (room_size * 0.5)  # 0.1s - 0.6s
+    num_samples = int(rt60 * sample_rate)
+    
+    # 生成指数衰减的白噪音作为 IR
+    t = np.linspace(0, 1, num_samples)
+    ir = np.random.randn(num_samples) * np.exp(-t * (5 + damping * 5))
+    
+    # 归一化 IR
+    ir = ir / np.max(np.abs(ir))
+    
+    # 使用 FFT 卷积 (比直接卷积快得多)
+    wet_signal = scipy.signal.fftconvolve(audio, ir, mode='full')
+    
+    # 截断到原始长度 (为了对齐选原始长度)
+    wet_signal = wet_signal[:len(audio)]
+    
+    # 混合干湿声
+    # dry (1.0 - wet_level) + wet (wet_level)
+    output = (audio * (1.0 - wet_level)) + (wet_signal * wet_level)
+    
+    # 防止削波
+    max_val = np.max(np.abs(output))
+    if max_val > 1.0:
+        output = output / max_val
+        
+    return output.astype(np.float32)
 

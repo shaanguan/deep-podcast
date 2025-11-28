@@ -138,14 +138,15 @@ class TextNormalizer:
         return text
     
     def _normalize_punctuation(self, text: str) -> str:
-        """规范化标点符号，保留情感标点以支持 ChatTTS 语调控制"""
-        # ChatTTS 支持 ! 和 ? 来控制语调，必须保留
+        """规范化标点符号为 ChatTTS 支持的格式"""
+        # ChatTTS 实际支持：, .（逗号和句号）
+        # 感叹号和问号会报错，需要转换
         replacements = {
-            # 中文标点转换（保留情感标点）
+            # 中文标点转换
             '，': ',',
             '。': '.',
-            '！': '!',   # 保留感叹号，控制语气强度
-            '？': '?',   # 保留问号，控制升调（疑问语气）
+            '！': '.',   # 感叹号转句号（ChatTTS不支持!）
+            '？': '.',   # 问号转句号（ChatTTS不支持?）
             '；': ',',
             '：': ',',
             '"': '',
@@ -164,6 +165,8 @@ class TextNormalizer:
             '…': '...',  # 省略号保留
             '～': '',    # 波浪号
             # 英文标点
+            '!': '.',    # 感叹号转句号
+            '?': '.',    # 问号转句号
             ';': ',',
             ':': ',',
             '"': '',
@@ -176,12 +179,14 @@ class TextNormalizer:
         for old, new in replacements.items():
             text = text.replace(old, new)
         
-        # 移除连续的逗号和句号（但保留 ! 和 ?）
+        # 移除连续的标点
         text = re.sub(r',+', ',', text)
-        text = re.sub(r'\.{4,}', '...', text)  # 最多保留3个点
+        text = re.sub(r'\.+', '.', text)
+        text = re.sub(r'!+', '!', text)
+        text = re.sub(r'\?+', '?', text)
         
-        # 移除开头和结尾的逗号（但不移除 ! 和 ?）
-        text = text.strip(', ')
+        # 移除开头和结尾的标点
+        text = text.strip(',.!? ')
         
         return text
     

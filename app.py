@@ -52,6 +52,7 @@ class AppState:
     config: dict = None
     model_loaded: bool = False
     is_generating: bool = False
+    stop_requested: bool = False
     progress: float = 0.0
     status: str = "idle"
     total_segments: int = 0
@@ -152,6 +153,19 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/api/stop', methods=['POST'])
+def stop_generation():
+    """终止生成"""
+    global APP_STATE
+    APP_STATE.stop_requested = True
+    APP_STATE.is_generating = False
+    APP_STATE.status = "stopped"
+    # 设置生成器的停止标志
+    if APP_STATE.generator is not None:
+        APP_STATE.generator.stop_flag = True
+    return jsonify({"success": True})
+
+
 @app.route('/api/status')
 def get_status():
     return jsonify({
@@ -198,8 +212,12 @@ def api_generate():
     total_segs = len(dialogues)
     
     APP_STATE.is_generating = True
+    APP_STATE.stop_requested = False
     APP_STATE.progress = 0
     APP_STATE.status = "generating"
+    # 重置生成器的停止标志
+    if APP_STATE.generator is not None:
+        APP_STATE.generator.stop_flag = False
     APP_STATE.total_segments = total_segs
     APP_STATE.current_segment = 0
     APP_STATE.message = ""
@@ -222,6 +240,13 @@ def api_generate():
             new_roles = {}
             used_seeds = set()
             
+            # 获取原始配置中的 emb_file 映射（seed -> emb_file）
+            original_roles = load_config().get('roles', {})
+            seed_to_emb = {}
+            for rid, rdata in original_roles.items():
+                if 'emb_file' in rdata and rdata.get('seed'):
+                    seed_to_emb[rdata['seed']] = rdata['emb_file']
+            
             for role_id, role_data in roles_config.items():
                 seed = role_data.get('seed', 3333)
                 speed = role_data.get('speed', 5)
@@ -237,7 +262,7 @@ def api_generate():
                         seed = (seed % 9999) + 1
                 used_seeds.add(seed)
                 
-                new_roles[role_id] = {
+                role_entry = {
                     "seed": seed,
                     "prompt": f"[speed_{speed}]",
                     "desc": f"角色{role_id}",
@@ -247,11 +272,24 @@ def api_generate():
                         "break": break_
                     }
                 }
+                
+                # 如果 seed 对应有 emb_file，添加到配置中
+                if original_seed in seed_to_emb:
+                    role_entry["emb_file"] = seed_to_emb[original_seed]
+                    print(f"[DEBUG] 角色 {role_id} 使用 emb_file: {role_entry['emb_file']}")
+                
+                new_roles[role_id] = role_entry
             
             APP_STATE.config['roles'] = new_roles
             
+            # 打印角色配置，用于调试
+            print(f"[DEBUG] 角色配置: {new_roles}")
+            
             APP_STATE.role_manager = RoleManager(APP_STATE.config)
             APP_STATE.generator.role_manager = APP_STATE.role_manager
+            
+            # 打印角色缓存，确认配置已加载
+            print(f"[DEBUG] 角色缓存: {APP_STATE.role_manager.role_cache}")
             
             output_path = str(PROJECT_ROOT / "data" / "output" / "podcast.wav")
             
@@ -273,8 +311,10 @@ def api_generate():
             APP_STATE.current_segment = initial_count
             
             # 监控进度：10%（模型已加载）-> 95%（生成完成）-> 100%（合并完成）
+            stop_monitor = threading.Event()
+            
             def monitor_progress():
-                while APP_STATE.is_generating:
+                while not stop_monitor.is_set():
                     if temp_dir_path.exists():
                         current_count = len(list(temp_dir_path.glob("*.wav")))
                         APP_STATE.current_segment = current_count
@@ -291,9 +331,11 @@ def api_generate():
                 dialogues, output_path, resume=resume_mode, force=not resume_mode
             )
             
-            APP_STATE.is_generating = False
-            monitor_thread.join()
+            # 停止监控线程
+            stop_monitor.set()
+            monitor_thread.join(timeout=2)
             
+            # 先设置状态，再设置 is_generating = False，避免竞态条件
             if success and os.path.exists(output_path):
                 APP_STATE.progress = 1.0
                 APP_STATE.current_segment = total
@@ -301,6 +343,8 @@ def api_generate():
             else:
                 APP_STATE.status = "error"
                 APP_STATE.message = "生成失败"
+            
+            APP_STATE.is_generating = False
                 
         except Exception as e:
             APP_STATE.status = "error"
@@ -319,6 +363,157 @@ def get_audio():
     if audio_path.exists():
         return send_file(str(audio_path), mimetype='audio/wav')
     return jsonify({"error": "音频文件不存在"}), 404
+
+
+@app.route('/api/audio/waveform/<audio_id>')
+def get_audio_waveform(audio_id):
+    """获取音频波形数据（最多15秒）"""
+    import numpy as np
+    import soundfile as sf
+    
+    history_path = PROJECT_ROOT / "data" / "history" / f"{audio_id}.wav"
+    if not history_path.exists():
+        return jsonify({"success": False, "error": "文件不存在"})
+    
+    try:
+        # 读取音频
+        audio, sr = sf.read(str(history_path))
+        
+        # 最多取15秒
+        max_samples = sr * 15
+        if len(audio) > max_samples:
+            audio = audio[:max_samples]
+        
+        # 如果是立体声，转为单声道
+        if len(audio.shape) > 1:
+            audio = audio.mean(axis=1)
+        
+        # 将音频分成 80 个区间，计算每个区间的平均振幅
+        num_bars = 80
+        chunk_size = len(audio) // num_bars
+        
+        waveform = []
+        for i in range(num_bars):
+            start = i * chunk_size
+            end = start + chunk_size
+            chunk = audio[start:end]
+            # 计算 RMS 振幅
+            rms = np.sqrt(np.mean(chunk ** 2))
+            waveform.append(float(rms))
+        
+        # 归一化到 0-1
+        max_val = max(waveform) if waveform else 1
+        if max_val > 0:
+            waveform = [v / max_val for v in waveform]
+        
+        return jsonify({"success": True, "waveform": waveform})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route('/api/audio/save', methods=['POST'])
+def save_audio_to_history():
+    """保存当前音频到历史记录"""
+    try:
+        audio_path = PROJECT_ROOT / "data" / "output" / "podcast.wav"
+        if not audio_path.exists():
+            return jsonify({"success": False, "error": "音频文件不存在"})
+        
+        # 创建历史目录
+        history_dir = PROJECT_ROOT / "data" / "history"
+        history_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 生成唯一 ID
+        audio_id = str(int(time.time() * 1000))
+        
+        # 复制文件
+        import shutil
+        dest_path = history_dir / f"{audio_id}.wav"
+        shutil.copy2(str(audio_path), str(dest_path))
+        
+        return jsonify({"success": True, "id": audio_id})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route('/api/audio/history/<audio_id>')
+def get_history_audio(audio_id):
+    """获取历史音频"""
+    history_path = PROJECT_ROOT / "data" / "history" / f"{audio_id}.wav"
+    if history_path.exists():
+        return send_file(str(history_path), mimetype='audio/wav')
+    return jsonify({"error": "历史音频不存在"}), 404
+
+
+@app.route('/api/audio/history/<audio_id>', methods=['DELETE'])
+def delete_history_audio(audio_id):
+    """删除历史音频"""
+    try:
+        history_path = PROJECT_ROOT / "data" / "history" / f"{audio_id}.wav"
+        if history_path.exists():
+            os.remove(str(history_path))
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route('/api/preview', methods=['POST'])
+def preview_voice():
+    """生成音色试听（带缓存）"""
+    global APP_STATE
+    
+    try:
+        data = request.json
+        seed = int(data.get('seed', 3333))
+        speed = int(data.get('speed', 5))
+        oral = int(data.get('oral', 0))
+        laugh = int(data.get('laugh', 0))
+        break_ = int(data.get('break_', 3))
+        
+        # 生成缓存文件名（基于所有参数）
+        cache_name = f"preview_{seed}_{speed}_{oral}_{laugh}_{break_}.wav"
+        preview_dir = PROJECT_ROOT / "temp" / "preview"
+        preview_dir.mkdir(parents=True, exist_ok=True)
+        cache_path = preview_dir / cache_name
+        
+        # 如果缓存存在，直接返回
+        if cache_path.exists():
+            return send_file(str(cache_path), mimetype='audio/wav')
+        
+        # 加载模型
+        success, msg = ensure_model_loaded()
+        if not success:
+            return jsonify({"error": msg}), 500
+        
+        # 构建临时角色配置
+        from src.role_manager import RoleConfig
+        
+        role = RoleConfig(
+            seed=seed,
+            prompt=f"[speed_{speed}]",
+            desc="试听",
+            oral=oral,
+            laugh=laugh,
+            break_level=break_,
+            is_auto_generated=False
+        )
+        
+        # 生成音频
+        text = "大家好，欢迎收听本期播客"
+        spk_emb = APP_STATE.generator._get_speaker_embedding(seed)
+        audio = APP_STATE.generator._generate_single(text, role, spk_emb)
+        
+        if audio is None or len(audio) == 0:
+            return jsonify({"error": "生成失败"}), 500
+        
+        # 保存到缓存文件
+        sf.write(str(cache_path), audio, APP_STATE.generator.sample_rate)
+        
+        return send_file(str(cache_path), mimetype='audio/wav')
+        
+    except Exception as e:
+        print(f"[试听错误] {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/upload', methods=['POST'])
@@ -379,4 +574,4 @@ if __name__ == '__main__':
     print("启动服务器: http://localhost:5001")
     print()
     
-    app.run(host='127.0.0.1', port=5001, debug=False, threaded=True)
+    app.run(host='127.0.0.1', port=5001, debug=True, threaded=True)

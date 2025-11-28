@@ -6,6 +6,8 @@
 """
 
 import os
+import random
+import copy
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
@@ -41,7 +43,8 @@ from .utils import (
     print_info, print_success, print_warning, print_error,
     get_device, check_hardware,
     split_text, get_cache_filename,
-    get_pause_audio, crossfade_audio, normalize_audio
+    get_pause_audio, crossfade_audio, normalize_audio,
+    apply_reverb
 )
 
 
@@ -58,6 +61,7 @@ class AudioGenerator:
         """
         self.config = config
         self.role_manager = role_manager
+        self.stop_flag = False  # 停止标志
         
         # 音频配置
         audio_config = config.get('audio', {})
@@ -130,18 +134,60 @@ class AudioGenerator:
             print_error(f"ChatTTS 加载失败: {e}")
             return False
     
-    def _get_speaker_embedding(self, seed: int) -> Any:
+    def _set_all_seeds(self, seed: int):
         """
-        根据种子获取说话人嵌入
+        设置所有随机种子，确保音色稳定
         
         Args:
             seed: 随机种子
+        """
+        random.seed(seed)
+        np.random.seed(seed)
+        if HAS_TORCH:
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed(seed)
+                torch.cuda.manual_seed_all(seed)
+            # 设置 deterministic 模式
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+    
+    def _get_speaker_embedding(self, seed: int, emb_file: str = None) -> Any:
+        """
+        根据种子或文件获取说话人嵌入（返回深拷贝防止被修改）
+        
+        Args:
+            seed: 随机种子
+            emb_file: 可选的 embedding 文件路径（.pt 文件）
             
         Returns:
-            说话人嵌入向量
+            说话人嵌入向量的副本
         """
-        torch.manual_seed(seed)
-        return self.chat.sample_random_speaker()
+        # 如果指定了 embedding 文件，从文件加载
+        if emb_file and HAS_TORCH:
+            emb_path = Path(emb_file)
+            if not emb_path.is_absolute():
+                emb_path = self.assets_dir / emb_file if self.assets_dir else Path(emb_file)
+            
+            if emb_path.exists():
+                try:
+                    import torch
+                    spk_emb = torch.load(str(emb_path), map_location='cpu')
+                    print(f"[音色] 从文件加载: {emb_path.name}")
+                    if hasattr(spk_emb, 'clone'):
+                        return spk_emb.clone().detach()
+                    return copy.deepcopy(spk_emb)
+                except Exception as e:
+                    print_warning(f"加载 embedding 文件失败: {e}，回退到种子生成")
+        
+        # 从种子生成
+        self._set_all_seeds(seed)
+        spk_emb = self.chat.sample_random_speaker()
+        
+        # 深拷贝，防止被 ChatTTS 内部操作修改
+        if HAS_TORCH and hasattr(spk_emb, 'clone'):
+            return spk_emb.clone().detach()
+        return copy.deepcopy(spk_emb)
     
     def _generate_single(
         self,
@@ -164,35 +210,47 @@ class AudioGenerator:
         if not text or len(text.strip()) < 1:
             return None
         
-        # 【核心修复】每次生成前强制锁定种子，确保音色极致稳定
-        # 只要是这个角色说话，就强制回到初始状态，防止"越说越飘"
-        if HAS_TORCH:
-            torch.manual_seed(role.seed)
+        # 【关键修复】解决句尾吞字
+        # 在文本末尾强制加上 [uv_break] (无声停顿)
+        # 模型为了生成这个停顿，就必须先把前面的字完整读完，从而杜绝吞字
+        text = text + " [uv_break]"
+        
+        # 【核心修复】每次生成前锁定种子（必须在此处，不能省略）
+        torch.manual_seed(role.seed)
+        self._set_all_seeds(role.seed)
+        
+        # 调试：打印实际使用的角色参数
+        print(f"[生成] seed={role.seed}, text={text[:20]}...")
         
         # 重试机制
         max_retries = 3
         
         for attempt in range(max_retries):
             try:
-                # 构建 refine prompt（情感控制）
-                refine_prompt = f"[oral_{role.oral}][laugh_{role.laugh}][break_{role.break_level}]"
+                # 【关键】每次 infer 调用前必须重新设置种子
+                torch.manual_seed(role.seed)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed_all(role.seed)
+                random.seed(role.seed)
+                np.random.seed(role.seed)
                 
-                # 调用 ChatTTS（开启演技功能）
-                wavs = self.chat.infer(
-                    [text],
-                    use_decoder=True,
-                    do_text_normalization=False,
-                    skip_refine_text=False,  # 开启文本精修，启用情感控制
-                    params_refine_text=ChatTTS.Chat.RefineTextParams(
-                        prompt=refine_prompt,
-                    ),
-                    params_infer_code=ChatTTS.Chat.InferCodeParams(
-                        spk_emb=speaker_emb,
-                        temperature=self.temperature,
-                        top_P=self.top_P,
-                        top_K=self.top_K,
+                # 使用 torch.inference_mode 确保推理模式
+                with torch.inference_mode():
+                    # 调用 ChatTTS
+                    wavs = self.chat.infer(
+                        [text],
+                        use_decoder=True,
+                        do_text_normalization=False,
+                        skip_refine_text=True,  # 关闭文本精修
+                        params_infer_code=ChatTTS.Chat.InferCodeParams(
+                            spk_emb=speaker_emb,  # 直接使用，ChatTTS 内部会复制
+                            temperature=0.00001,  # 极低温度
+                            top_P=self.top_P,
+                            top_K=1,  # 贪婪解码
+                            prompt=role.prompt,
+                            manual_seed=role.seed,  # ChatTTS 内部种子
+                        )
                     )
-                )
                 
                 if wavs is not None and len(wavs) > 0:
                     audio = wavs[0]
@@ -251,8 +309,25 @@ class AudioGenerator:
             dialogues = dialogues[start:end]
             print_info(f"仅生成第 {start + 1} 到第 {end} 句")
         
-        # 缓存的说话人嵌入
+        # 【关键】在生成任何音频之前，预先为所有角色生成 speaker_embedding
+        # 这确保每个角色的嵌入在一开始就固定，不受后续操作影响
         speaker_embeddings: Dict[str, Any] = {}
+        
+        # 收集所有出现的角色
+        unique_speakers = set(item.speaker_id for item in dialogues)
+        print_info(f"检测到 {len(unique_speakers)} 个角色，预生成音色嵌入...")
+        
+        for speaker_id in sorted(unique_speakers):
+            role = self.role_manager.get_role(speaker_id)
+            spk_emb = self._get_speaker_embedding(role.seed, role.emb_file)
+            speaker_embeddings[speaker_id] = spk_emb
+            # 打印 embedding 类型和特征
+            emb_type = type(spk_emb).__name__
+            emb_id = id(spk_emb)
+            if HAS_TORCH and hasattr(spk_emb, 'shape'):
+                print(f"[角色初始化] {speaker_id}: seed={role.seed}, type={emb_type}, shape={spk_emb.shape}, id={emb_id}")
+            else:
+                print(f"[角色初始化] {speaker_id}: seed={role.seed}, type={emb_type}, id={emb_id}")
         
         # 存储所有音频片段
         audio_segments: List[np.ndarray] = []
@@ -275,6 +350,12 @@ class AudioGenerator:
         print_info(f"开始生成，共 {len(dialogues)} 个片段...")
         
         for item in iterator:
+            # 检查停止标志
+            if self.stop_flag:
+                print_info("用户终止生成")
+                self.stop_flag = False  # 重置标志
+                return False
+            
             # 获取角色配置
             role = self.role_manager.get_role(item.speaker_id)
             
@@ -296,10 +377,7 @@ class AudioGenerator:
                     audio_data = None
             
             if audio_data is None:
-                # 获取说话人嵌入（缓存）
-                if item.speaker_id not in speaker_embeddings:
-                    speaker_embeddings[item.speaker_id] = self._get_speaker_embedding(role.seed)
-                
+                # 使用预生成的说话人嵌入（已在循环前统一生成）
                 spk_emb = speaker_embeddings[item.speaker_id]
                 
                 # 长文本切分
@@ -353,10 +431,37 @@ class AudioGenerator:
             # 直接拼接
             full_audio = np.concatenate(audio_segments)
         
+        # 应用混响 (统一空间感)
+        reverb_cfg = self.config.get('audio', {}).get('reverb', {})
+        if reverb_cfg.get('enabled', False):
+            print_info("正在应用空间混响 (Studio Reverb)...")
+            full_audio = apply_reverb(
+                full_audio,
+                sample_rate=self.sample_rate,
+                room_size=reverb_cfg.get('room_size', 0.1),
+                damping=reverb_cfg.get('damping', 0.5),
+                wet_level=reverb_cfg.get('wet_level', 0.1)
+            )
+        
         # 音频归一化
         if self.do_normalize:
             print_info("正在归一化音频 (LUFS 标准)...")
             full_audio = normalize_audio(full_audio, sample_rate=self.sample_rate)
+        
+        # 验证音频数据
+        if full_audio is None or len(full_audio) == 0:
+            print_error("音频数据为空")
+            return False
+        
+        # 检查并修复无效值
+        if np.any(np.isnan(full_audio)) or np.any(np.isinf(full_audio)):
+            print_warning("检测到无效音频数据，正在修复...")
+            full_audio = np.nan_to_num(full_audio, nan=0.0, posinf=0.99, neginf=-0.99)
+        
+        # 确保音频在有效范围内
+        max_val = np.max(np.abs(full_audio))
+        if max_val > 1.0:
+            full_audio = full_audio / max_val * 0.99
         
         # 保存最终音频
         print_info(f"正在保存到: {output_path}")
@@ -366,7 +471,8 @@ class AudioGenerator:
             output_dir = Path(output_path).parent
             output_dir.mkdir(parents=True, exist_ok=True)
             
-            sf.write(output_path, full_audio, self.sample_rate)
+            # 使用显式参数保存
+            sf.write(output_path, full_audio.astype(np.float32), self.sample_rate, subtype='FLOAT')
             
             # 计算时长
             duration = len(full_audio) / self.sample_rate

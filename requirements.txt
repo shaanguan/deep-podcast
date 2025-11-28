@@ -17,6 +17,7 @@ colorama
 # 音频处理
 pydub
 pyloudnorm            # LUFS 响度归一化（广播级标准）
+scipy                 # 音频信号处理和混响
 
 # 文本预处理
 cn2an
