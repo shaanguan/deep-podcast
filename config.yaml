@@ -112,7 +112,7 @@ auto_seed:
 # 音频配置
 audio:
   sample_rate: 24000      # 采样率
-  pause_duration: 0.45    # 缩短停顿，让对话更紧凑，减少"断线感"
+  pause_duration: 0.25    # 紧凑停顿，模拟真实对话节奏
   normalize: true         # 是否归一化响度
   use_room_tone: false    # 关闭底噪（如无真实 room_tone.wav 文件）
   room_tone_volume: 0.01  # 底噪音量
