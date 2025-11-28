@@ -41,6 +41,9 @@ from src.utils import check_hardware
 app = Flask(__name__)
 CORS(app)
 
+# 并发锁：防止多用户同时生成导致显存爆炸或状态混乱
+generation_lock = threading.Lock()
+
 
 # ============================================================
 # 全局状态
@@ -196,7 +199,12 @@ def api_parse():
 def api_generate():
     global APP_STATE
     
+    # 非阻塞获取锁，防止并发调用
+    if not generation_lock.acquire(blocking=False):
+        return jsonify({"success": False, "error": "当前有任务正在进行，请稍候..."})
+    
     if APP_STATE.is_generating:
+        generation_lock.release()
         return jsonify({"success": False, "error": "正在生成中"})
     
     data = request.json
@@ -345,11 +353,13 @@ def api_generate():
                 APP_STATE.message = "生成失败"
             
             APP_STATE.is_generating = False
+            generation_lock.release()  # 释放锁
                 
         except Exception as e:
             APP_STATE.status = "error"
             APP_STATE.message = str(e)
             APP_STATE.is_generating = False
+            generation_lock.release()  # 异常时也要释放锁
     
     thread = threading.Thread(target=run_generation)
     thread.start()

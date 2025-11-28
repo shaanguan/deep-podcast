@@ -165,10 +165,13 @@ def get_device() -> str:
 def generate_room_tone(
     duration: float,
     sample_rate: int = 24000,
-    volume: float = 0.01
+    volume: float = 0.001  # 降低默认音量，0.01 太响
 ) -> np.ndarray:
     """
-    生成底噪（白噪音）
+    生成拟真底噪（布朗噪音）
+    
+    白噪音太刺耳，使用累积求和模拟布朗噪音，听感更温暖
+    真实录音环境底噪更接近布朗/粉红噪音（低沉的嗡嗡声）
     
     Args:
         duration: 时长（秒）
@@ -179,11 +182,24 @@ def generate_room_tone(
         音频数据 numpy 数组
     """
     num_samples = int(duration * sample_rate)
-    # 生成白噪音
-    noise = np.random.randn(num_samples).astype(np.float32)
-    # 调整音量
-    noise *= volume
-    return noise
+    
+    # 1. 生成白噪音
+    white = np.random.randn(num_samples).astype(np.float32)
+    
+    # 2. 转换为布朗噪音（积分/累积求和）
+    # 布朗噪音在高频衰减更快，听起来更柔和
+    brown = np.cumsum(white)
+    
+    # 3. 去除直流分量（Center around 0）
+    brown -= np.mean(brown)
+    
+    # 4. 归一化幅度
+    max_val = np.max(np.abs(brown))
+    if max_val > 0:
+        brown /= max_val
+    
+    # 5. 应用音量
+    return (brown * volume).astype(np.float32)
 
 
 def load_room_tone(

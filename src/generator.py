@@ -210,10 +210,9 @@ class AudioGenerator:
         if not text or len(text.strip()) < 1:
             return None
         
-        # 【关键修复】解决句尾吞字
-        # 在文本末尾强制加上 [uv_break] (无声停顿)
-        # 模型为了生成这个停顿，就必须先把前面的字完整读完，从而杜绝吞字
-        text = text + " [uv_break]"
+        # 【优化】将语速控制 prompt 直接拼接到文本前，控制力更强
+        # 同时在末尾加 [uv_break] 防止吞字
+        text = f"{role.prompt} {text} [uv_break]"
         
         # 【核心修复】每次生成前锁定种子（必须在此处，不能省略）
         torch.manual_seed(role.seed)
@@ -247,6 +246,7 @@ class AudioGenerator:
                             temperature=0.00001,  # 极低温度
                             top_P=self.top_P,
                             top_K=1,  # 贪婪解码
+                            # prompt 已拼接到 text 里，这里保留作为双重保险
                             prompt=role.prompt,
                             manual_seed=role.seed,  # ChatTTS 内部种子
                         )

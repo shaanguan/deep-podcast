@@ -1857,7 +1857,8 @@
             $('progress-time').textContent = '已用时 0:00';
             lucide.createIcons();
             
-            // 启动轮询
+            // 启动轮询（先清除旧的定时器，防止重复）
+            stopPolling();
             isPolling = true;
             
             // 启动计时器
@@ -1959,9 +1960,10 @@
         }
         
         let isPolling = false;  // 轮询控制标志
+        let pollTimeout = null; // 轮询定时器引用
         
         async function pollProgress() {
-            if (!isPolling) return;  // 如果已停止轮询，直接返回
+            if (!isPolling) return;  // 安全出口：如果已停止轮询，直接返回
             
             try {
                 const res = await fetch('/api/status');
@@ -1999,9 +2001,9 @@
                     return;
                 }
                 
-                // 只有在需要继续轮询时才设置定时器
+                // 使用 setTimeout 递归，确保上一个请求回来后再发下一个（避免请求堆积）
                 if (isPolling && (data.is_generating || data.status === 'loading' || data.status === 'generating')) {
-                    setTimeout(pollProgress, 500);
+                    pollTimeout = setTimeout(pollProgress, 500);
                 } else if (data.status === 'complete') {
                     isPolling = false;
                     showResult(data);
@@ -2013,10 +2015,18 @@
                     clearInterval(timerInterval);
                 }
             } catch (e) {
-                // 网络错误时，仅当仍在轮询状态才重试
+                // 网络错误时，仅当仍在轮询状态才重试（慢一点）
                 if (isPolling) {
-                    setTimeout(pollProgress, 1000);
+                    pollTimeout = setTimeout(pollProgress, 2000);
                 }
+            }
+        }
+        
+        function stopPolling() {
+            isPolling = false;
+            if (pollTimeout) {
+                clearTimeout(pollTimeout);
+                pollTimeout = null;
             }
         }
         
@@ -2029,7 +2039,7 @@
         
         // 终止生成按钮
         $('stop-btn').addEventListener('click', async () => {
-            isPolling = false;  // 停止轮询
+            stopPolling();  // 停止轮询（清除定时器）
             try {
                 await fetch('/api/stop', { method: 'POST' });
             } catch (e) {}
