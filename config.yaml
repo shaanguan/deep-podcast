@@ -1,110 +1,43 @@
 # ============================================================
-# Deep Podcast 配置文件 (四大经典人设)
+# Deep Podcast 配置文件
 # ============================================================
 
 # 全局演技配置
 style:
-  temperature: 0.1        # 极低随机性，追求极致稳定
-  top_P: 0.6              # 降低采样范围，确保术语准确
+  temperature: 0.3        # 随机性 (0.1稳定 - 0.9疯狂)
+  top_P: 0.7
   top_K: 20
   
   # 文本精修参数 (ChatTTS RefineText)
   refine:
-    oral: 0               # 口语化归零，追求干练
-    laugh: 0              # 严肃讨论
-    break: 3              # 句子内部流畅
+    oral: 2               # 口语化程度 (0-9)
+    laugh: 0              # 笑声概率 (0-9)
+    break: 4              # 停顿概率 (0-9)
 
-# 角色配置 (四大经典人设 + 精调音色)
+# 固定角色配置
+# 未在此定义的角色将自动分配声纹
 roles:
-  # 精调音色 1 - 时尚男生 (seed_1345)
-  "0":
-    seed: 1345
-    emb_file: "seed_1345_restored_emb.pt"
-    prompt: "[speed_5]"
-    desc: "时尚男生"
-    refine_override:
-      oral: 0
-      laugh: 0
-      break: 3
-
-  # 精调音色 2 - 温柔女声 (seed_742)
-  "10":
-    seed: 742
-    emb_file: "seed_742_restored_emb.pt"
-    prompt: "[speed_5]"
-    desc: "温柔女声"
-    refine_override:
-      oral: 0
-      laugh: 0
-      break: 3
-
-  # 精调音色 3 - 磁性男声 (seed_1736)
-  "11":
-    seed: 1736
-    emb_file: "seed_1736_restored_emb.pt"
-    prompt: "[speed_5]"
-    desc: "磁性男声"
-    refine_override:
-      oral: 0
-      laugh: 0
-      break: 3
-
-  # 精调音色 4 - 清澈女声 (seed_1754)
-  "12":
-    seed: 1754
-    emb_file: "seed_1754_restored_emb.pt"
-    prompt: "[speed_5]"
-    desc: "清澈女声"
-    refine_override:
-      oral: 0
-      laugh: 0
-      break: 3
-
-  # 1. 知性女生 (成熟、稳重、中速)
-  # 适用：新闻播报、深度访谈主持人、知识讲解
   "1":
-    seed: 3133            # 经典的知性女声，音质极佳
-    prompt: "[speed_5]"   # 语速适中，清晰
-    desc: "知性女生"
+    seed: 3333            # 固定女声种子
+    prompt: "[speed_5]"
+    desc: "主持人(知性女声)"
+    # 主持人需要更专业清晰
     refine_override:
-      oral: 0             # 字正腔圆，不吞音
-      laugh: 0            # 保持专业微笑感
-      break: 3            # 节奏平稳
-
-  # 2. 活泼女生 (年轻、跳跃、快速)
-  # 适用：综艺嘉宾、轻松话题、情感类节目
-  "2":
-    seed: 2617            # 声音甜美，音调较高的年轻女声
-    prompt: "[speed_7]"   # 语速快，体现活力
-    desc: "活泼女生"
-    refine_override:
-      oral: 5             # 较高的口语化，像真人在聊天
-      laugh: 5            # 经常带有笑意
-      break: 3            # 适度停顿
-
-  # 3. 睿智男生 (成熟、深沉、中速)
-  # 适用：专家解读、悬疑故事旁白、科技大佬
-  "3":
-    seed: 6666            # 低沉磁性的男声，很有说服力
-    prompt: "[speed_5]"   # 语速稳健，给人思考空间
-    desc: "睿智男生"
-    refine_override:
-      oral: 1             # 稍微自然一点，不像读稿子
-      laugh: 0            # 严肃沉稳
-      break: 5            # 停顿较多，从容不迫
-
-  # 4. 青年男生 (年轻、干练、快速)
-  # 适用：科技博主、快讯播报、大学生角色
-  "4":
-    seed: 5674            # 清亮、有朝气的年轻男声
-    prompt: "[speed_7]"   # 语速快，信息密度大
-    desc: "青年男生"
-    refine_override:
-      oral: 3             # 适度口语化，自然流畅
-      laugh: 1            # 偶尔轻松
-      break: 1            # 节奏紧凑，不拖泥带水
+      oral: 0
+      laugh: 0
+      break: 3
+  
+  # 示例：如需固定其他角色，取消注释并修改
+  # "2":
+  #   seed: 2222
+  #   prompt: "[speed_5]"
+  #   desc: "嘉宾(男声)"
+  #   refine_override:
+  #     oral: 3
+  #     laugh: 1
 
 # 自动种子生成策略
+# 新角色的 Seed = base + (ID * step)
 auto_seed:
   base: 5000
   step: 337
@@ -112,20 +45,14 @@ auto_seed:
 # 音频配置
 audio:
   sample_rate: 24000      # 采样率
-  pause_duration: 0.25    # 紧凑停顿，模拟真实对话节奏
+  pause_duration: 0.5     # 段落间停顿(秒)
   normalize: true         # 是否归一化响度
-  use_room_tone: false    # 关闭底噪（如无真实 room_tone.wav 文件）
-  room_tone_volume: 0.01  # 底噪音量
-  crossfade_ms: 50        # 减小混音时间，让切入更利落
-  
-  # 混响配置 (统一空间感的核心)
-  reverb:
-    enabled: true         # 是否开启
-    room_size: 0.1        # 房间大小 (0.0-1.0)，0.1 代表紧凑的录音棚
-    damping: 0.5          # 高频阻尼，越大约温暖
-    wet_level: 0.1        # 湿声比例 (0.0-1.0)，0.1 只有一点点反射，保持清晰
+  use_room_tone: true     # 使用底噪代替静音
+  room_tone_volume: 0.01  # 底噪音量 (0.0-1.0)
+  crossfade_ms: 50        # 交叉淡入淡出(毫秒)
 
 # 文本处理配置
 text:
-  max_chunk_length: 100   # 长文本切分阈值
+  max_chunk_length: 100   # 长文本切分阈值(字符)
   convert_numbers: true   # 数字转汉字
+

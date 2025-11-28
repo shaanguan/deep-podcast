@@ -23,9 +23,6 @@ class RoleConfig:
     
     # 是否为自动生成的角色
     is_auto_generated: bool = False
-    
-    # 可选的 embedding 文件路径（优先于 seed）
-    emb_file: str = None
 
 
 class RoleManager:
@@ -75,8 +72,7 @@ class RoleManager:
                 oral=refine_override.get('oral', self.default_oral),
                 laugh=refine_override.get('laugh', self.default_laugh),
                 break_level=refine_override.get('break', self.default_break),
-                is_auto_generated=False,
-                emb_file=role_data.get('emb_file', None)
+                is_auto_generated=False
             )
             
             self.role_cache[speaker_id] = role

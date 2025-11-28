@@ -6,7 +6,8 @@ Deep Podcast - ChatTTS 多角色配音应用
     python main.py -i data/input/transcript.txt -o data/output/podcast.wav
     python main.py --dry-run           # 空跑模式
     python main.py --range 5-10        # 只生成第5-10句
-    python main.py --force             # 强制重新生成（忽略缓存）
+    python main.py --resume            # 从缓存恢复
+    python main.py --force             # 强制重新生成
     python main.py --clean             # 清理缓存
 """
 
@@ -91,7 +92,8 @@ def main():
   python main.py -i script.txt -o output.wav        # 指定输入输出
   python main.py --dry-run                          # 空跑模式（只解析不生成）
   python main.py --range 5-10                       # 只生成第5-10句
-  python main.py --force                            # 忽略缓存，强制重新生成
+  python main.py --resume                           # 从缓存恢复
+  python main.py --force                            # 忽略缓存，强制重生成
   python main.py --clean                            # 清空缓存目录
         """
     )
@@ -126,11 +128,16 @@ def main():
     )
     
     # 缓存控制
-    # 默认启用断点续传，使用 --force 可以强制重新生成
+    parser.add_argument(
+        '--resume',
+        action='store_true',
+        default=True,
+        help='从缓存恢复（默认启用）'
+    )
     parser.add_argument(
         '--force',
         action='store_true',
-        help='强制重新生成，忽略缓存（默认会自动续传）'
+        help='强制重新生成，忽略缓存'
     )
     parser.add_argument(
         '--clean',
@@ -218,7 +225,7 @@ def main():
     success = generator.generate(
         dialogues,
         args.output,
-        resume=not args.force,  # 默认续传，--force 时关闭
+        resume=args.resume,
         force=args.force,
         range_start=range_start,
         range_end=range_end

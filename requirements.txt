@@ -2,7 +2,7 @@
 # Python >= 3.9, < 3.12
 
 # 核心依赖 (版本锁定以确保兼容性)
-ChatTTS>=0.2.4
+ChatTTS==0.2.1
 torch>=2.1.0,<2.5.0
 torchaudio>=2.1.0,<2.5.0
 transformers>=4.41.1,<4.45.0
@@ -16,14 +16,12 @@ colorama
 
 # 音频处理
 pydub
-pyloudnorm            # LUFS 响度归一化（广播级标准）
-scipy                 # 音频信号处理和混响
 
 # 文本预处理
 cn2an
 python-docx           # 解析 Word 文档
 
 # Web UI
-flask>=3.0.0
-flask-cors>=4.0.0
+gradio==4.36.0
+pydantic>=2.0,<2.10
 

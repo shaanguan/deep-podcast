@@ -81,16 +81,8 @@ def parse_transcript(
         nonlocal current_speaker_id, current_text_parts
         
         if current_speaker_id is not None and current_text_parts:
-            # 合并文本，检测段落间的换行来插入停顿标签
-            # 如果 parts 之间有空行（表示换段落），插入停顿标签
-            merged_parts = []
-            for i, part in enumerate(current_text_parts):
-                merged_parts.append(part)
-                # 检查是否是段落分隔（空字符串表示原文有空行）
-                if part == '__PARAGRAPH_BREAK__':
-                    merged_parts[-1] = '[uv_break]'  # 用停顿标签替换
-            
-            raw_text = ' '.join(p for p in merged_parts if p != '__PARAGRAPH_BREAK__')
+            # 合并文本
+            raw_text = ' '.join(current_text_parts)
             
             # 清理 HTML/XML 标签
             clean_text = source_tag_pattern.sub('', raw_text)
@@ -114,16 +106,11 @@ def parse_transcript(
         current_speaker_id = None
         current_text_parts = []
     
-    prev_was_empty = False  # 跟踪上一行是否为空行
-    
     for line in lines:
-        original_line = line
         line = line.strip()
         
-        # 检测空行（可能表示段落分隔，需要插入停顿）
+        # 跳过空行
         if not line:
-            if current_speaker_id is not None and current_text_parts:
-                prev_was_empty = True
             continue
         
         # 移除行首的时间戳（如 "00:15:30" 或 "[00:15]"）
@@ -139,7 +126,6 @@ def parse_transcript(
         if match:
             # 保存上一段对话
             save_current_dialogue()
-            prev_was_empty = False
             
             # 开始新的对话
             current_speaker_id = match.group(2)
@@ -151,10 +137,6 @@ def parse_transcript(
         else:
             # 不是发言人标记，作为内容追加
             if current_speaker_id is not None:
-                # 如果之前有空行，先插入段落分隔标记
-                if prev_was_empty:
-                    current_text_parts.append('__PARAGRAPH_BREAK__')
-                    prev_was_empty = False
                 current_text_parts.append(line)
             else:
                 # 如果还没有发言人，跳过这些内容
